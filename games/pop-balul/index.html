@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Popcat Balul</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: #111827;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #f9fafb;
+      user-select: none;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 32px;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 20px;
+    }
+
+    .counter {
+      font-size: 64px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-shadow: 0 0 12px rgba(0,0,0,0.5);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 28px;
+      background: rgba(15,23,42,0.9);
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      border: 1px solid rgba(148,163,184,0.3);
+    }
+
+    .popcat-wrapper {
+      position: relative;
+      cursor: pointer;
+      border-radius: 20px;
+      overflow: hidden;
+      transform-origin: center;
+      transition: transform 0.05s ease-out;
+    }
+
+    .popcat-img {
+      display: block;
+      width: min(320px, 80vw);
+      height: auto;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    .btn-reset {
+      margin-top: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-reset:hover {
+      background: rgba(31,41,55,1);
+      transform: translateY(-1px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Popcat Balul</h1>
+    <div class="subtitle">Klik / tap Balul sebanyak-banyaknya!</div>
+
+    <div id="counter" class="counter">0</div>
+
+    <div id="popcatWrapper" class="popcat-wrapper">
+      <img
+        id="popcatImg"
+        src="balul.jpg"
+        alt="Balul Popcat"
+        class="popcat-img"
+      />
+    </div>
+
+    <div class="hint">Klik / tap gambar untuk menambah skor.</div>
+    <button id="resetBtn" class="btn-reset">Reset Skor</button>
+  </div>
+
+  <!-- 🔊 Suara klik -->
+  <audio id="clickSound" src="water-droplet-drip.mp3" preload="auto"></audio>
+
+  <script>
+    const popcatWrapper = document.getElementById("popcatWrapper");
+    const popcatImg = document.getElementById("popcatImg");
+    const counterEl = document.getElementById("counter");
+    const resetBtn = document.getElementById("resetBtn");
+    const clickSound = document.getElementById("clickSound");
+
+    let score = 0;
+    const closedImg = "balul.jpg";
+    const openImg = "balul2.jpg";
+
+    function updateScore() {
+      score++;
+      counterEl.textContent = score;
+    }
+
+    function openMouth() {
+      popcatImg.src = openImg;
+      popcatWrapper.style.transform = "scale(0.95)";
+    }
+
+    function closeMouth() {
+      popcatImg.src = closedImg;
+      popcatWrapper.style.transform = "scale(1)";
+    }
+
+    function handlePressStart(e) {
+      e.preventDefault();
+      updateScore();
+      openMouth();
+
+      // 🔊 Mainkan suara
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+
+    function handlePressEnd(e) {
+      e.preventDefault();
+      closeMouth();
+    }
+
+    // Mouse events
+    popcatWrapper.addEventListener("mousedown", handlePressStart);
+    document.addEventListener("mouseup", handlePressEnd);
+    popcatWrapper.addEventListener("mouseleave", handlePressEnd);
+
+    // Touch events (HP)
+    popcatWrapper.addEventListener("touchstart", handlePressStart, { passive: false });
+    popcatWrapper.addEventListener("touchend", handlePressEnd);
+    popcatWrapper.addEventListener("touchcancel", handlePressEnd);
+
+    // Disable right click
+    popcatWrapper.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    // Tombol reset
+    resetBtn.addEventListener("click", () => {
+      score = 0;
+      counterEl.textContent = score;
+      closeMouth();
+    });
+  </script>
+</body>
+</html>

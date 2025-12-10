@@ -1,0 +1,171 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Fredoka One', cursive, sans-serif;
+    background: #87CEEB;
+    /* Sky blue */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+.game-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    height: 100vh;
+    background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    color: #fff;
+    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+    font-size: 2rem;
+    z-index: 10;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    margin-top: 10px;
+    font-size: 1.5rem;
+    color: #2E8B57;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.scene {
+    position: relative;
+    flex-grow: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* Align canvas to bottom */
+    padding-bottom: 50px;
+    /* Ground height */
+}
+
+.ground {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 80px;
+    /* Taller ground visual */
+    background: #8B4513;
+    border-top: 10px solid #6c3209;
+}
+
+canvas {
+    z-index: 5;
+    cursor: pointer;
+    background: transparent;
+    border-bottom: none;
+    /* We want the plant to look rooted */
+    margin-bottom: -10px;
+}
+
+/* Decor */
+.sun {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: #FFD700;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #FFA500;
+    animation: pulse 4s infinite;
+}
+
+.cloud {
+    position: absolute;
+    background: #fff;
+    border-radius: 20px;
+    opacity: 0.8;
+}
+
+.cl-1 {
+    width: 100px;
+    height: 40px;
+    top: 100px;
+    left: -20px;
+    animation: drift 20s linear infinite;
+}
+
+.cl-2 {
+    width: 80px;
+    height: 30px;
+    top: 150px;
+    right: -20px;
+    animation: drift 25s linear infinite reverse;
+}
+
+@keyframes drift {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(100vw);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Game Over Overlay */
+#game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 20;
+    backdrop-filter: blur(5px);
+}
+
+.hidden {
+    display: none !important;
+}
+
+#restart-btn {
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    border: none;
+    border-radius: 50px;
+    background: #2E8B57;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s;
+}
+
+#restart-btn:hover {
+    transform: scale(1.1);
+}

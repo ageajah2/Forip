@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Blaster</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <h1>NEON BLASTER</h1>
+        <div class="hud">
+            <div id="score">Score: 0</div>
+            <div id="timer">Time: 60</div>
+            <div id="health">HP: 100%</div>
+        </div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="game-over" class="hidden">
+            <h2>MISSION ENDED</h2>
+            <p id="final-score">Score: 0</p>
+            <button id="restart-btn">RETRY</button>
+        </div>
+        <div class="controls-hint">WASD to Move/Jump &bull; Mouse to Aim/Shoot</div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

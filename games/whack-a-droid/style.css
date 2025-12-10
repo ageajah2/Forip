@@ -1,0 +1,124 @@
+body {
+    background: #2c3e50;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    text-align: center;
+    user-select: none;
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #f1c40f;
+    text-shadow: 2px 2px #e67e22;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.score-board,
+.timer {
+    font-size: 2rem;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+.grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+.hole {
+    width: 150px;
+    height: 150px;
+    background: #34495e;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 8px solid #203549;
+    box-shadow: inset 0 10px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.droid {
+    width: 80px;
+    height: 100px;
+    background: #e74c3c;
+    position: absolute;
+    bottom: -100%;
+    /* Hidden by default */
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 40% 40% 0 0;
+    transition: bottom 0.4s;
+    cursor: pointer;
+}
+
+.droid::before {
+    content: '';
+    position: absolute;
+    top: 30%;
+    left: 20%;
+    width: 15px;
+    height: 15px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 30px 0 0 #fff;
+    /* Two eyes */
+}
+
+.droid::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 35px;
+    width: 10px;
+    height: 20px;
+    background: #bdc3c7;
+    /* Antenna */
+}
+
+/* When the hole has class 'up', show the droid */
+.hole.up .droid {
+    bottom: 0;
+}
+
+button {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 30px;
+    box-shadow: 0 5px #219150;
+    transition: all 0.1s;
+}
+
+button:active {
+    box-shadow: 0 2px #219150;
+    transform: translateY(3px);
+}
+
+button:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    box-shadow: none;
+}

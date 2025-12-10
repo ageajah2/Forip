@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voxel Snake 3D - Mirror Floor</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; }
+        
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            pointer-events: auto;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        h1 { margin: 0 0 10px 0; font-size: 24px; text-shadow: 2px 2px 0 #000; color: #4caf50;}
+        p { margin: 5px 0; font-size: 14px; opacity: 0.9; }
+        
+        .highlight { color: #ffd700; font-weight: bold; }
+        .key-hint { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;}
+        
+        .control-group { margin-top: 15px; border-top: 1px solid #555; padding-top: 10px; }
+        label { font-size: 14px; margin-right: 10px; }
+        input[type="color"] { cursor: pointer; border: none; width: 40px; height: 25px; vertical-align: middle; border-radius: 4px;}
+
+        #score-board { margin-top: 10px; font-size: 24px; font-weight: bold; color: #fff; }
+        #camera-status, #mirror-status { font-size: 12px; color: #aaa; margin-top: 5px; }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 0 50px rgba(76, 175, 80, 0.3);
+            border: 2px solid #4caf50;
+        }
+        button {
+            background: #4caf50;
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        button:hover { background: #45a049; transform: scale(1.05); }
+    </style>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="ui-container">
+        <h1>Voxel Snake 3D</h1>
+        <p>Ganti Kamera: <span class="key-hint">SPASI</span></p>
+        <p>Mode Cermin: <span class="key-hint">M</span></p> 
+        
+        <div class="control-group">
+            <p id="controls-hint">Kontrol: <b>WASD (Arah Mata Angin)</b></p>
+            <p id="camera-status">Kamera: Orbit (Bebas)</p>
+            <p id="mirror-status">Lantai: Standar</p>
+        </div>
+        
+        <div class="control-group">
+            <label for="colorPicker">Warna Ular:</label>
+            <input type="color" id="colorPicker" value="#4caf50">
+        </div>
+
+        <div id="score-board">Score: 0</div>
+    </div>
+
+    <div id="game-over">
+        <h2 style="margin-top:0">Tabrakan!</h2>
+        <p id="final-score" style="font-size: 20px;">Score: 0</p>
+        <button onclick="resetGame()">Main Lagi</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        // --- IMPORT BARU UNTUK REFLEKSI ---
+        import { Reflector } from 'three/addons/objects/Reflector.js';
+
+        // --- KONFIGURASI ---
+        const BOARD_SIZE = 17;
+        const CUBE_SIZE = 1;
+        const SPEED = 110;
+        const FOOD_COUNT = 5;
+
+        // --- VARIABEL GAME ---
+        let scene, camera, renderer, controls;
+        let snake = [];
+        let snakeMeshes = [];
+        let snakeColor = new THREE.Color('#4caf50');
+        let foods = [];
+        let foodMeshes = [];
+        
+        let direction = { x: 1, z: 0 };
+        let nextDirection = { x: 1, z: 0 };
+        let lastMoveTime = 0;
+        let score = 0;
+        let isGameOver = false;
+        
+        // --- VARIABEL KAMERA & VISUAL ---
+        let isFollowCam = false;
+        let smoothedHeadPos = new THREE.Vector3(0, 0, 0);
+
+        // --- VARIABEL LANTAI BARU ---
+        let defaultFloor, mirrorFloor, gridHelper;
+        let isReflective = false; // Status mode cermin
+        
+        const snakeGroup = new THREE.Group();
+        const foodGroup = new THREE.Group();
+
+        // --- INIT ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
+            // Fog dikurangi sedikit agar refleksi lebih jelas di kejauhan
+            scene.fog = new THREE.Fog(0x111111, 20, 60); 
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            setCameraOrbit(); 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Shadow lebih halus
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.1;
+
+            // Pencahayaan ditingkatkan untuk refleksi
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(15, 30, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.set(2048, 2048);
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 500;
+            scene.add(dirLight);
+
+            // --- SETUP LANTAI GANDA ---
+            const planeGeo = new THREE.PlaneGeometry(BOARD_SIZE + 10, BOARD_SIZE + 10);
+
+            // 1. Lantai Standar (Matte)
+            const planeMat = new THREE.MeshStandardMaterial({ 
+                color: 0x222222,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            defaultFloor = new THREE.Mesh(planeGeo, planeMat);
+            defaultFloor.rotation.x = -Math.PI / 2;
+            defaultFloor.position.y = -0.5;
+            defaultFloor.receiveShadow = true;
+            scene.add(defaultFloor); // Mulai dengan lantai standar
+
+            // 2. Lantai Cermin (Reflector)
+            mirrorFloor = new Reflector(planeGeo, {
+                clipBias: 0.003,
+                textureWidth: window.innerWidth * window.devicePixelRatio,
+                textureHeight: window.innerHeight * window.devicePixelRatio,
+                color: 0x888888 // Warna dasar pantulan (agak gelap agar tidak terlalu silau)
+            });
+            mirrorFloor.rotation.x = -Math.PI / 2;
+            mirrorFloor.position.y = -0.49; // Sedikit di atas lantai standar untuk menghindari z-fighting
+            // mirrorFloor belum ditambahkan ke scene
+
+            // Grid Helper
+            gridHelper = new THREE.GridHelper(BOARD_SIZE, BOARD_SIZE, 0x444444, 0x333333);
+            gridHelper.position.y = -0.48;
+            scene.add(gridHelper);
+
+            scene.add(snakeGroup);
+            scene.add(foodGroup);
+
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', onKeyDown);
+            
+            document.getElementById('colorPicker').addEventListener('input', (e) => {
+                snakeColor.set(e.target.value);
+                updateSnakeColor();
+            });
+
+            resetGame();
+            animate();
+        }
+
+        // --- LOGIKA GANTI LANTAI (MIRROR TOGGLE) ---
+        function toggleMirrorMode() {
+            isReflective = !isReflective;
+            const statusText = document.getElementById('mirror-status');
+
+            if (isReflective) {
+                // Mode Cermin ON
+                scene.remove(defaultFloor);
+                scene.add(mirrorFloor);
+                gridHelper.visible = false; // Sembunyikan grid agar pantulan bersih
+                statusText.innerText = "Lantai: Cermin (Reflektif)";
+                statusText.style.color = "#4caf50";
+            } else {
+                // Mode Cermin OFF (Standar)
+                scene.remove(mirrorFloor);
+                scene.add(defaultFloor);
+                gridHelper.visible = true; // Tampilkan grid kembali
+                statusText.innerText = "Lantai: Standar";
+                statusText.style.color = "#aaa";
+            }
+        }
+
+        // --- LOGIKA KAMERA & KONTROL ---
+        function toggleCameraMode() {
+            isFollowCam = !isFollowCam;
+            const statusText = document.getElementById('camera-status');
+            const hintText = document.getElementById('controls-hint');
+
+            if (isFollowCam) {
+                controls.enabled = false; 
+                statusText.innerText = "Kamera: Mengikuti Ular (Follow)";
+                hintText.innerHTML = "Kontrol: <b>A (Kiri) / D (Kanan)</b> relatif ular";
+                if(snake.length > 0) smoothedHeadPos.set(snake[0].x, 0, snake[0].z);
+            } else {
+                controls.enabled = true; 
+                setCameraOrbit(); 
+                statusText.innerText = "Kamera: Orbit (Bebas)";
+                hintText.innerHTML = "Kontrol: <b>WASD (Arah Mata Angin)</b>";
+            }
+        }
+
+        function setCameraOrbit() {
+            camera.position.set(0, 25, 18);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function updateCameraFollow() {
+            if (!snake.length) return;
+            const head = snake[0];
+
+            const targetHeadVec = new THREE.Vector3(head.x, 0, head.z);
+            smoothedHeadPos.lerp(targetHeadVec, 0.12); 
+
+            const distH = 10; 
+            const distV = 9;  
+            
+            const desiredCamX = smoothedHeadPos.x - (direction.x * distH);
+            const desiredCamZ = smoothedHeadPos.z - (direction.z * distH);
+            const idealCameraPos = new THREE.Vector3(desiredCamX, distV, desiredCamZ);
+
+            camera.position.lerp(idealCameraPos, 0.06);
+            camera.lookAt(smoothedHeadPos); 
+        }
+
+        function onKeyDown(event) {
+            // Toggle Kamera (SPASI)
+            if (event.key === ' ') {
+                toggleCameraMode();
+                return;
+            }
+            // Toggle Cermin (M) - INPUT BARU
+            if (event.key === 'm' || event.key === 'M') {
+                toggleMirrorMode();
+                return;
+            }
+
+            if (isFollowCam) {
+                if (event.key === 'a' || event.key === 'A' || event.key === 'ArrowLeft') {
+                    nextDirection = { x: direction.z, z: -direction.x };
+                }
+                else if (event.key === 'd' || event.key === 'D' || event.key === 'ArrowRight') {
+                    nextDirection = { x: -direction.z, z: direction.x };
+                }
+                return; 
+            }
+
+            switch (event.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                    if (direction.z !== 1) nextDirection = { x: 0, z: -1 }; break;
+                case 'ArrowDown': case 's': case 'S':
+                    if (direction.z !== -1) nextDirection = { x: 0, z: 1 }; break;
+                case 'ArrowLeft': case 'a': case 'A':
+                    if (direction.x !== 1) nextDirection = { x: -1, z: 0 }; break;
+                case 'ArrowRight': case 'd': case 'D':
+                    if (direction.x !== -1) nextDirection = { x: 1, z: 0 }; break;
+            }
+        }
+
+        // --- GAME LOGIC ---
+
+        function resetGame() {
+            snake = [{ x: 0, z: 0 }, { x: -1, z: 0 }, { x: -2, z: 0 }];
+            direction = { x: 1, z: 0 };
+            nextDirection = { x: 1, z: 0 };
+            score = 0;
+            isGameOver = false;
+
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('score-board').innerText = 'Score: 0';
+
+            snakeGroup.clear();
+            snakeMeshes = [];
+            foodGroup.clear();
+            foodMeshes = [];
+            foods = [];
+
+            smoothedHeadPos.set(0, 0, 0);
+
+            snake.forEach(pos => addSnakeSegment(pos.x, pos.z));
+            for(let i = 0; i < FOOD_COUNT; i++) spawnFood();
+            
+            if(isFollowCam) {
+                camera.position.set(-10, 10, 0);
+                camera.lookAt(0,0,0);
+            }
+        }
+
+        function spawnFood() {
+            let validPosition = false;
+            let x, z;
+            const limit = Math.floor(BOARD_SIZE / 2);
+            while (!validPosition) {
+                x = Math.floor(Math.random() * BOARD_SIZE) - limit;
+                z = Math.floor(Math.random() * BOARD_SIZE) - limit;
+                validPosition = !snake.some(s => s.x === x && s.z === z) && !foods.some(f => f.x === x && f.z === z);
+            }
+            foods.push({ x, z });
+            // Makanan dibuat sedikit lebih glossy agar pantulannya bagus
+            const geometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            const hue = Math.random(); 
+            const material = new THREE.MeshStandardMaterial({ 
+                color: new THREE.Color().setHSL(hue, 0.8, 0.5),
+                emissive: new THREE.Color().setHSL(hue, 0.8, 0.2),
+                roughness: 0.1,
+                metalness: 0.3
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, 0, z);
+            mesh.castShadow = true;
+            foodGroup.add(mesh);
+            foodMeshes.push(mesh);
+        }
+
+        function addSnakeSegment(x, z) {
+            const geometry = new THREE.BoxGeometry(CUBE_SIZE * 0.95, CUBE_SIZE * 0.95, CUBE_SIZE * 0.95);
+            // Material ular dibuat sedikit lebih reflektif juga
+            const material = new THREE.MeshStandardMaterial({ 
+                color: snakeColor, 
+                roughness: 0.4,
+                metalness: 0.1
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, 0, z);
+            mesh.castShadow = true;
+            snakeGroup.add(mesh);
+            snakeMeshes.push(mesh);
+        }
+
+        function updateSnakeColor() {
+            snakeMeshes.forEach((mesh, index) => {
+                if (index === 0) mesh.material.color.copy(snakeColor).offsetHSL(0, 0, 0.15);
+                else mesh.material.color.copy(snakeColor);
+            });
+        }
+
+        function updateGame() {
+            if (isGameOver) return;
+
+            if (nextDirection.x !== -direction.x && nextDirection.z !== -direction.z) {
+                direction = nextDirection;
+            }
+
+            const head = snake[0];
+            let newHead = { x: head.x + direction.x, z: head.z + direction.z };
+
+            const limit = Math.floor(BOARD_SIZE / 2);
+            if (newHead.x > limit) newHead.x = -limit;
+            else if (newHead.x < -limit) newHead.x = limit;
+            if (newHead.z > limit) newHead.z = -limit;
+            else if (newHead.z < -limit) newHead.z = limit;
+
+            if (snake.some(segment => segment.x === newHead.x && segment.z === newHead.z)) {
+                isGameOver = true;
+                document.getElementById('final-score').innerText = 'Score: ' + score;
+                document.getElementById('game-over').style.display = 'block';
+                return;
+            }
+
+            snake.unshift(newHead);
+
+            let eatenIndex = -1;
+            for (let i = 0; i < foods.length; i++) {
+                if (newHead.x === foods[i].x && newHead.z === foods[i].z) {
+                    eatenIndex = i;
+                    break;
+                }
+            }
+
+            if (eatenIndex !== -1) {
+                score += 10;
+                document.getElementById('score-board').innerText = 'Score: ' + score;
+                foodGroup.remove(foodMeshes[eatenIndex]);
+                foods.splice(eatenIndex, 1);
+                foodMeshes.splice(eatenIndex, 1);
+                addSnakeSegment(newHead.x, newHead.z);
+                spawnFood(); 
+            } else {
+                snake.pop();
+            }
+            updateVisuals();
+        }
+
+        function updateVisuals() {
+            for (let i = 0; i < snake.length; i++) {
+                snakeMeshes[i].position.set(snake[i].x, 0, snake[i].z);
+            }
+            updateSnakeColor();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // Ukuran tekstur refleksi tidak perlu diupdate saat resize untuk kesederhanaan,
+            // kualitas awal sudah cukup tinggi.
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            if (time - lastMoveTime > SPEED) {
+                updateGame();
+                lastMoveTime = time;
+            }
+
+            foodMeshes.forEach((mesh, i) => {
+                mesh.rotation.y += 0.03;
+                mesh.rotation.x = Math.sin(time * 0.002 + i) * 0.2;
+                mesh.position.y = Math.sin(time * 0.005 + i) * 0.15;
+            });
+
+            if (isFollowCam) {
+                updateCameraFollow();
+            } else {
+                controls.update();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.resetGame = resetGame;
+        init();
+    </script>
+</body>
+</html>

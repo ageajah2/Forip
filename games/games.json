@@ -1,0 +1,95 @@
+[
+  {
+    "title": "SNAKE 3D",
+    "slug": "3d-snake",
+    "thumb": "games/3d-snake/thumb.png",
+    "path": "games/3d-snake/index.html",
+    "tags": [
+      "arcade",
+      "two-player"
+    ],
+    "author": "Admin"
+  },
+  {
+    "title": "Bayam Growth",
+    "slug": "bayam-growth",
+    "thumb": "games/bayam/thumb.png",
+    "path": "games/bayam/index.html",
+    "tags": [
+      "clicker",
+      "arcade",
+      "nature"
+    ],
+    "author": "Antigravity"
+  },
+  {
+    "title": "Cyber Pong",
+    "slug": "cyber-pong",
+    "thumb": "games/cyber-pong/thumb.png",
+    "path": "games/cyber-pong/index.html",
+    "tags": [
+      "arcade",
+      "retro",
+      "neon"
+    ],
+    "author": "Antigravity"
+  },
+  {
+    "title": "Cosmic Dodge",
+    "slug": "cosmic-dodge",
+    "thumb": "games/cosmic-dodge/thumb.png",
+    "path": "games/cosmic-dodge/index.html",
+    "tags": [
+      "action",
+      "space",
+      "survival"
+    ],
+    "author": "Antigravity"
+  },
+  {
+    "title": "Whack-a-Droid",
+    "slug": "whack-a-droid",
+    "thumb": "games/whack-a-droid/thumb.png",
+    "path": "games/whack-a-droid/index.html",
+    "tags": [
+      "arcade",
+      "casual",
+      "fun"
+    ],
+    "author": "Antigravity"
+  },
+  {
+    "title": "Masiku",
+    "slug": "masiku",
+    "thumb": "games/masiku/thumb.png",
+    "path": "games/masiku/index.html",
+    "tags": [
+      "fun"
+    ],
+    "author": "Indo"
+  },
+  {
+    "title": "Neon Blaster",
+    "slug": "neon-blaster",
+    "thumb": "games/neon-blaster/thumb.png",
+    "path": "games/neon-blaster/index.html",
+    "tags": [
+      "action",
+      "shooter",
+      "platformer"
+    ],
+    "author": "Antigravity"
+  },
+  {
+    "title": "Pop Balul",
+    "slug": "pop-balul",
+    "thumb": "games/pop-balul/thumb.jpg",
+    "path": "games/pop-balul/index.html",
+    "tags": [
+      "action",
+      "corruption",
+      "politic"
+    ],
+    "author": "Warga"
+  }
+]
