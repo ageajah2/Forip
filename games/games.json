@@ -59,7 +59,7 @@
     "author": "Antigravity"
   },
   {
-    "title": "Masiku",
+    "title": "Harun Masiku",
     "slug": "masiku",
     "thumb": "games/masiku/thumb.png",
     "path": "games/masiku/index.html",
@@ -92,4 +92,5 @@
     ],
     "author": "Warga"
   }
+
 ]
