@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Space Defender</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+            background: #0a0a2a;
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+        }
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        .btn-row {
+            display: flex;
+            gap: 20px;
+        }
+        .btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid #555;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+        .btn:active {
+            background: rgba(255,255,255,0.4);
+        }
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">Score: <span id="score">0</span> | HP: <span id="hp">5</span></div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <div id="mobileControls">
+        <div class="btn-row">
+            <div class="btn" id="btnA">A</div>
+            <div class="btn" id="btnW">W</div>
+            <div class="btn" id="btnD">D</div>
+        </div>
+        <div class="btn-row">
+            <div class="btn" id="btnS">S</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const hpEl = document.getElementById('hp');
+
+        // Resize canvas to fit screen (mobile-friendly)
+        function resizeCanvas() {
+            const scale = Math.min(window.innerWidth / 800, window.innerHeight / 600, 1);
+            canvas.style.transform = `scale(${scale})`;
+            canvas.style.transformOrigin = 'top left';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game state
+        const state = {
+            score: 0,
+            hp: 5,
+            gameOver: false,
+            keys: {
+                w: false,
+                a: false,
+                s: false,
+                d: false
+            }
+        };
+
+        // Player
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 60,
+            width: 40,
+            height: 30,
+            speed: 5,
+            lastShot: 0,
+            cooldown: 200 // ms
+        };
+
+        // Projectiles & Enemies
+        const bullets = [];
+        const ufos = [];
+        const ufoBullets = [];
+
+        // Spawn UFO
+        function spawnUFO() {
+            const size = 30 + Math.random() * 20;
+            ufos.push({
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                width: size,
+                height: size / 2,
+                speed: 1 + Math.random() * 2,
+                shootChance: 0.002 + state.score * 0.0001, // higher score → more shooting
+                lastShot: 0,
+                shootCooldown: 1500
+            });
+        }
+
+        // Input Handling
+        window.addEventListener('keydown', (e) => {
+            if (state.gameOver && e.key === ' ') restart();
+            switch(e.key.toLowerCase()) {
+                case 'w': state.keys.w = true; break;
+                case 'a': state.keys.a = true; break;
+                case 's': state.keys.s = true; break;
+                case 'd': state.keys.d = true; break;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'w': state.keys.w = false; break;
+                case 'a': state.keys.a = false; break;
+                case 's': state.keys.s = false; break;
+                case 'd': state.keys.d = false; break;
+            }
+        });
+
+        // Mobile controls
+        document.getElementById('btnW').addEventListener('touchstart', () => state.keys.w = true);
+        document.getElementById('btnW').addEventListener('touchend', () => state.keys.w = false);
+        document.getElementById('btnA').addEventListener('touchstart', () => state.keys.a = true);
+        document.getElementById('btnA').addEventListener('touchend', () => state.keys.a = false);
+        document.getElementById('btnS').addEventListener('touchstart', () => state.keys.s = true);
+        document.getElementById('btnS').addEventListener('touchend', () => state.keys.s = false);
+        document.getElementById('btnD').addEventListener('touchstart', () => state.keys.d = true);
+        document.getElementById('btnD').addEventListener('touchend', () => state.keys.d = false);
+
+        // Shooting (player auto-shoot)
+        function playerShoot() {
+            const now = Date.now();
+            if (now - player.lastShot > player.cooldown) {
+                bullets.push({
+                    x: player.x,
+                    y: player.y - 5,
+                    width: 4,
+                    height: 12,
+                    speed: 7
+                });
+                player.lastShot = now;
+            }
+        }
+
+        // UFO shooting
+        function ufoShoot(ufo) {
+            const now = Date.now();
+            if (now - ufo.lastShot > ufo.shootCooldown && Math.random() < ufo.shootChance) {
+                ufoBullets.push({
+                    x: ufo.x + ufo.width / 2,
+                    y: ufo.y + ufo.height,
+                    width: 4,
+                    height: 10,
+                    speed: 4 + Math.random() * 2
+                });
+                ufo.lastShot = now;
+            }
+        }
+
+        // Collision detection (simple AABB)
+        function collides(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
+        // Update game logic
+        function update() {
+            if (state.gameOver) return;
+
+            // Move player
+            if (state.keys.w) player.y = Math.max(20, player.y - player.speed);
+            if (state.keys.s) player.y = Math.min(canvas.height - 30, player.y + player.speed);
+            if (state.keys.a) player.x = Math.max(20, player.x - player.speed);
+            if (state.keys.d) player.x = Math.min(canvas.width - 20, player.x + player.speed);
+
+            // Auto-shoot
+            playerShoot();
+
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= bullets[i].speed;
+                if (bullets[i].y < -10) bullets.splice(i, 1);
+            }
+
+            // Update UFOs
+            if (Math.random() < 0.02 + state.score * 0.0001) spawnUFO(); // more UFOs as score increases
+
+            for (let i = ufos.length - 1; i >= 0; i--) {
+                const ufo = ufos[i];
+                ufo.y += ufo.speed;
+
+                // Remove if off-screen
+                if (ufo.y > canvas.height) {
+                    ufos.splice(i, 1);
+                    continue;
+                }
+
+                // UFO shoots
+                ufoShoot(ufo);
+
+                // Check bullet hits
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    if (collides(bullets[j], ufo)) {
+                        bullets.splice(j, 1);
+                        ufos.splice(i, 1);
+                        state.score += 10;
+                        scoreEl.textContent = state.score;
+                        break;
+                    }
+                }
+            }
+
+            // Update UFO bullets
+            for (let i = ufoBullets.length - 1; i >= 0; i--) {
+                ufoBullets[i].y += ufoBullets[i].speed;
+                if (ufoBullets[i].y > canvas.height) {
+                    ufoBullets.splice(i, 1);
+                    continue;
+                }
+
+                // Check if hits player
+                if (collides(ufoBullets[i], player)) {
+                    ufoBullets.splice(i, 1);
+                    state.hp--;
+                    hpEl.textContent = state.hp;
+                    if (state.hp <= 0) {
+                        state.gameOver = true;
+                    }
+                }
+            }
+        }
+
+        // Render
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars (background)
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 137) % canvas.width;
+                const y = (i * 223) % canvas.height;
+                ctx.globalAlpha = 0.3 + (Math.sin(Date.now()/1000 + i) * 0.3);
+                ctx.fillRect(x, y, 1.5, 1.5);
+            }
+            ctx.globalAlpha = 1;
+
+            // Draw player (triangle)
+            ctx.fillStyle = '#4fc3f7';
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 15);
+            ctx.lineTo(player.x - 15, player.y + 15);
+            ctx.lineTo(player.x + 15, player.y + 15);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw bullets
+            ctx.fillStyle = '#ff5252';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x - 2, bullet.y, bullet.width, bullet.height);
+            });
+
+            // Draw UFOs
+            ufos.forEach(ufo => {
+                ctx.fillStyle = '#8bc34a';
+                ctx.beginPath();
+                ctx.arc(ufo.x + ufo.width/2, ufo.y + ufo.height/2, ufo.width/2, 0, Math.PI * 2);
+                ctx.fill();
+                // Saucer body
+                ctx.fillStyle = '#689f38';
+                ctx.fillRect(ufo.x, ufo.y + ufo.height/3, ufo.width, ufo.height/3);
+            });
+
+            // Draw UFO bullets
+            ctx.fillStyle = '#ff9800';
+            ufoBullets.forEach(bullet => {
+                ctx.fillRect(bullet.x - 2, bullet.y, bullet.width, bullet.height);
+            });
+
+            // Game Over
+            if (state.gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = '40px "Courier New", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.font = '24px "Courier New", monospace';
+                ctx.fillText(`Score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 60);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function restart() {
+            state.score = 0;
+            state.hp = 5;
+            state.gameOver = false;
+            bullets.length = 0;
+            ufos.length = 0;
+            ufoBullets.length = 0;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 60;
+            scoreEl.textContent = '0';
+            hpEl.textContent = '5';
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start
+        gameLoop();
+
+        // Spawn initial UFOs
+        setInterval(spawnUFO, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacu Balap Tap-Tap</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:#1a1a2e;
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+.container{max-width:900px;width:100%;text-align:center}
+h1{color:#ffcc00;margin-bottom:8px}
+.subtitle{margin-bottom:12px}
+
+.game-container{
+    position:relative;
+    background:#0d1930;
+    border-radius:10px;
+    overflow:hidden;
+}
+canvas{display:block;width:100%}
+
+.controls{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+.player{
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+}
+.p1{border:2px solid #ff5252}
+.p2{border:2px solid #4dabf7}
+
+.mobile-controls{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+}
+.mobile-btn{
+    flex:1;
+    padding:20px;
+    font-size:1.2rem;
+    font-weight:bold;
+    border:none;
+    border-radius:10px;
+    color:#fff;
+}
+.btn-p1{background:#ff5252}
+.btn-p2{background:#4dabf7}
+
+.winner{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    display:none;
+    align-items:center;
+    justify-content:center;
+}
+.winner div{
+    background:#111a30;
+    padding:25px;
+    border-radius:15px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h1>PACU BALAP TAP-TAP</h1>
+    <p class="subtitle">Spam tap, bukan hold!</p>
+
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div class="winner" id="winnerScreen">
+            <div>
+                <h2 id="winnerText"></h2>
+                <p id="winnerMessage"></p>
+                <button onclick="restart()">Main Lagi</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="player p1">PEMAIN 1<br>D / TAP</div>
+        <div class="player p2">PEMAIN 2<br>→ / TAP</div>
+    </div>
+
+    <div class="mobile-controls">
+        <button class="mobile-btn btn-p1" id="tapP1">P1 TAP</button>
+        <button class="mobile-btn btn-p2" id="tapP2">P2 TAP</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const finishLine = canvas.width - 100;
+const trackY1 = 100;
+const trackY2 = 250;
+
+let gameRunning = true;
+let p1Pos = 50;
+let p2Pos = 50;
+let p1Speed = 0;
+let p2Speed = 0;
+let p1Tap = 0;
+let p2Tap = 0;
+
+/* === ANTI HOLD LOCK === */
+let p1Lock = false;
+let p2Lock = false;
+
+/* === GAMBAR MOBIL === */
+const p1Img = new Image();
+const p2Img = new Image();
+let p1Loaded = false;
+let p2Loaded = false;
+
+p1Img.onload = ()=>p1Loaded=true;
+p2Img.onload = ()=>p2Loaded=true;
+p1Img.src = "pacu1.webp";
+p2Img.src = "pacu2.webp";
+
+/* === KEYBOARD (ANTI HOLD) === */
+document.addEventListener("keydown", e=>{
+    if(!gameRunning) return;
+
+    if((e.key==="d"||e.key==="D") && !p1Lock){
+        p1Speed+=1;
+        p1Tap++;
+        p1Lock=true;
+    }
+    if(e.key==="ArrowRight" && !p2Lock){
+        p2Speed+=1;
+        p2Tap++;
+        p2Lock=true;
+    }
+});
+
+document.addEventListener("keyup", e=>{
+    if(e.key==="d"||e.key==="D") p1Lock=false;
+    if(e.key==="ArrowRight") p2Lock=false;
+});
+
+/* === MOBILE (ANTI HOLD) === */
+tapP1.addEventListener("touchstart", e=>{
+    e.preventDefault();
+    if(!gameRunning||p1Lock) return;
+    p1Speed+=1;
+    p1Tap++;
+    p1Lock=true;
+});
+tapP1.addEventListener("touchend", ()=>p1Lock=false);
+
+tapP2.addEventListener("touchstart", e=>{
+    e.preventDefault();
+    if(!gameRunning||p2Lock) return;
+    p2Speed+=1;
+    p2Tap++;
+    p2Lock=true;
+});
+tapP2.addEventListener("touchend", ()=>p2Lock=false);
+
+/* === GAME === */
+function drawTrack(){
+    ctx.fillStyle="#2a3c5e";
+    ctx.fillRect(0,trackY1-15,canvas.width,70);
+    ctx.fillRect(0,trackY2-15,canvas.width,70);
+
+    ctx.strokeStyle="#fff";
+    ctx.setLineDash([10,15]);
+    ctx.beginPath();
+    ctx.moveTo(50,trackY1-10);ctx.lineTo(50,trackY1+50);
+    ctx.moveTo(50,trackY2-10);ctx.lineTo(50,trackY2+50);
+    ctx.moveTo(finishLine,trackY1-10);ctx.lineTo(finishLine,trackY1+50);
+    ctx.moveTo(finishLine,trackY2-10);ctx.lineTo(finishLine,trackY2+50);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function drawCar(x,y,color,isP1){
+    if(isP1 && p1Loaded){
+        ctx.drawImage(p1Img,x,y,60,40);
+    }else if(!isP1 && p2Loaded){
+        ctx.drawImage(p2Img,x,y,60,40);
+    }else{
+        ctx.fillStyle=color;
+        ctx.fillRect(x,y+10,60,20);
+        ctx.beginPath();
+        ctx.moveTo(x+10,y+10);
+        ctx.lineTo(x+25,y);
+        ctx.lineTo(x+45,y);
+        ctx.lineTo(x+50,y+10);
+        ctx.fill();
+    }
+}
+
+function update(){
+    if(!gameRunning) return;
+
+    p1Pos+=p1Speed;
+    p2Pos+=p2Speed;
+    p1Speed*=0.95;
+    p2Speed*=0.95;
+
+    if(p1Pos>=finishLine||p2Pos>=finishLine){
+        gameRunning=false;
+        const w=document.getElementById("winnerScreen");
+        const t=document.getElementById("winnerText");
+        const m=document.getElementById("winnerMessage");
+        w.style.display="flex";
+
+        if(p1Pos>p2Pos){
+            t.textContent="PEMAIN 1 MENANG";
+            m.textContent=`Tap: ${p1Tap}`;
+        }else if(p2Pos>p1Pos){
+            t.textContent="PEMAIN 2 MENANG";
+            m.textContent=`Tap: ${p2Tap}`;
+        }else{
+            t.textContent="SERI!";
+            m.textContent="Finish bersamaan";
+        }
+    }
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawTrack();
+    drawCar(p1Pos,trackY1,"#ff5252",true);
+    drawCar(p2Pos,trackY2,"#4dabf7",false);
+}
+
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+loop();
+
+function restart(){
+    gameRunning=true;
+    p1Pos=p2Pos=50;
+    p1Speed=p2Speed=0;
+    p1Tap=p2Tap=0;
+    document.getElementById("winnerScreen").style.display="none";
+}
+</script>
+</body>
+</html>

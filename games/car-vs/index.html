@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Race Duel - Side by Side</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameWrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #gameContainer {
+            position: relative;
+            width: 400px; /* Lebar ditambah sedikit agar muat 2 mobil sejajar */
+            height: 640px;
+            background: #222;
+            border: 4px solid #444;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        #road {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        /* Garis Jalan */
+        .lane {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 60px;
+            background: repeating-linear-gradient(to bottom, transparent 0, transparent 20px, #fff 20px, #fff 60px);
+            opacity: 0.4;
+        }
+        /* Penanda lajur kiri kanan */
+        .lane-divider-left { left: 33%; position: absolute; width: 2px; height: 100%; background: rgba(255,255,255,0.1); top: 0; }
+        .lane-divider-right { left: 66%; position: absolute; width: 2px; height: 100%; background: rgba(255,255,255,0.1); top: 0; }
+
+        .car {
+            position: absolute;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.6);
+            transition: left 0.08s linear;
+            z-index: 5;
+        }
+        /* Desain Mobil */
+        .player1 { 
+            background: linear-gradient(180deg, #2196f3 0%, #0d47a1 100%); 
+            border: 2px solid #64b5f6; 
+            color: white;
+        }
+        .player2 { 
+            background: linear-gradient(180deg, #f44336 0%, #b71c1c 100%); 
+            border: 2px solid #ef9a9a; 
+            color: white;
+        }
+        .enemy { 
+            background: linear-gradient(180deg, #66bb6a 0%, #2e7d32 100%); 
+            border: 1px solid #81c784; 
+            color: #e8f5e9;
+        }
+
+        /* Efek ledakan sederhana */
+        .crashed {
+            transform: scale(0.9) rotate(5deg);
+            filter: grayscale(100%) brightness(0.5);
+            opacity: 0.6;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .score-box { font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; }
+        
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.92);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+        }
+        #winner { font-size: 36px; margin-bottom: 10px; color: gold; font-weight: bold; text-transform: uppercase; }
+        #reason { font-size: 16px; color: #ccc; margin-bottom: 30px; }
+        
+        #restartBtn {
+            background: #ff9800; color: white; border: none;
+            padding: 15px 50px; font-size: 20px; border-radius: 50px;
+            cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+        }
+        #restartBtn:hover { background: #ffa726; transform: scale(1.05); }
+
+        /* Controls */
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            width: 400px;
+            padding: 0 10px;
+        }
+        .control-group { text-align: center; }
+        .control-label { font-size: 12px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-row { display: flex; gap: 15px; }
+        .btn {
+            width: 65px; height: 65px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid #444;
+            border-radius: 15px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; color: #ddd; cursor: pointer;
+            user-select: none;
+        }
+        .btn:active, .btn.pressed { background: rgba(255,255,255,0.25); border-color: white; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="gameWrapper">
+        <div id="gameContainer">
+            <div id="ui">
+                <div class="score-box" style="color: #42a5f5;">P1 (Blue)</div>
+                <div class="score-box" id="speed">Speed: 1.0x</div>
+                <div class="score-box" style="color: #ef5350;">P2 (Red)</div>
+            </div>
+            
+            <div id="road">
+                <div class="lane-divider-left"></div>
+                <div class="lane-divider-right"></div>
+                </div>
+
+            <div id="gameOver">
+                <div id="winner">Player 1 Wins!</div>
+                <div id="reason">Player 2 Crashed!</div>
+                <button id="restartBtn">REMATCH</button>
+            </div>
+        </div>
+
+        <div id="controls">
+            <div class="control-group">
+                <div class="control-label">Player 1 (WASD)</div>
+                <div class="btn-row">
+                    <div class="btn" id="p1Left">A</div>
+                    <div class="btn" id="p1Right">D</div>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="control-label">Player 2 (Arrows)</div>
+                <div class="btn-row">
+                    <div class="btn" id="p2Left">←</div>
+                    <div class="btn" id="p2Right">→</div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 15px; color: #555; font-size: 12px;">Dodge the Green Cars!</div>
+    </div>
+
+    <script>
+        const road = document.getElementById('road');
+        const uiSpeed = document.getElementById('speed');
+        const gameOverScreen = document.getElementById('gameOver');
+        const winnerText = document.getElementById('winner');
+        const reasonText = document.getElementById('reason');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Config
+        const config = {
+            roadWidth: 400,
+            roadHeight: 640,
+            carWidth: 50,
+            carHeight: 85,
+            playerY: 520 // Posisi Y tetap (di bawah)
+        };
+
+        const state = {
+            running: false,
+            speed: 1.0,
+            speedIncrease: 0.0004
+        };
+
+        const player1 = { el: null, x: 0, alive: true, controls: { left: false, right: false } };
+        const player2 = { el: null, x: 0, alive: true, controls: { left: false, right: false } };
+
+        let enemies = [];
+        let movingLines = [];
+        let frameId;
+        let spawnInterval;
+
+        // --- Visual Setup ---
+        function createMovingLines() {
+            // Garis putus-putus di tengah jalan
+            for(let i=0; i<8; i++) {
+                const line = document.createElement('div');
+                line.className = 'lane';
+                line.style.top = (i * 100) + 'px';
+                road.appendChild(line);
+                movingLines.push({ el: line, y: i * 100 });
+            }
+        }
+
+        function createCar(x, y, type, text) {
+            const car = document.createElement('div');
+            car.className = `car ${type}`;
+            car.style.width = config.carWidth + 'px';
+            car.style.height = config.carHeight + 'px';
+            car.style.left = x + 'px';
+            car.style.top = y + 'px';
+            car.innerText = text;
+            road.appendChild(car);
+            return { el: car, x, y, width: config.carWidth, height: config.carHeight };
+        }
+
+        // --- Game Logic ---
+
+        function spawnEnemy() {
+            if (!state.running) return;
+
+            // Logika spawn: Pilih jalur acak (0 sampai 3)
+            // Kita bagi jalan menjadi 4 jalur virtual agar lebih rapat
+            const laneCount = 6;
+            const laneWidth = config.roadWidth / laneCount;
+            const randomLane = Math.floor(Math.random() * laneCount);
+            
+            // X position di tengah jalur tersebut
+            const xPos = (randomLane * laneWidth) + (laneWidth - config.carWidth) / 2;
+            
+            // Kecepatan random + speed level
+            const enemySpeed = (4 + Math.random() * 3) * state.speed;
+
+            const enemy = createCar(xPos, -100, 'enemy', '▼');
+            enemies.push({ ...enemy, speed: enemySpeed });
+        }
+
+        function checkCollision(player, enemy) {
+            const padding = 8; // Hitbox sedikit lebih kecil dari gambar agar fair
+            return (
+                player.x < enemy.x + enemy.width - padding &&
+                player.x + config.carWidth > enemy.x + padding &&
+                config.playerY < enemy.y + enemy.height - padding &&
+                config.playerY + config.carHeight > enemy.y + padding
+            );
+        }
+
+        function update() {
+            if (!state.running) return;
+
+            // 1. Difficulty ramping
+            state.speed += state.speedIncrease;
+            uiSpeed.textContent = `Speed: ${state.speed.toFixed(1)}x`;
+
+            // 2. Move Players
+            const moveSpeed = 6 * state.speed; // Pemain bergerak lebih responsif
+
+            if (player1.alive) {
+                if (player1.controls.left) player1.x = Math.max(5, player1.x - moveSpeed);
+                if (player1.controls.right) player1.x = Math.min((config.roadWidth / 1) - config.carWidth - 5, player1.x + moveSpeed); // P1 dibatasi ke tengah (opsional, tapi biar tidak nabrak P2 mudah)
+                
+                // Hapus batas atas jika ingin P1 bisa ke area P2:
+                // if (player1.controls.right) player1.x = Math.min(config.roadWidth - config.carWidth - 5, player1.x + moveSpeed);
+                
+                player1.el.style.left = player1.x + 'px';
+            }
+
+            if (player2.alive) {
+                if (player2.controls.left) player2.x = Math.max(5, player2.x - moveSpeed);
+                // if (player2.controls.left) player2.x = Math.max((config.roadWidth / 2) + 5, player2.x - moveSpeed); // P2 dibatasi di kanan
+                
+                if (player2.controls.right) player2.x = Math.min(config.roadWidth - config.carWidth - 5, player2.x + moveSpeed);
+                player2.el.style.left = player2.x + 'px';
+            }
+
+            // 3. Move Background Lines (Efek Ngebut)
+            movingLines.forEach(line => {
+                line.y += 12 * state.speed;
+                if (line.y > config.roadHeight) line.y -= 800; // Reset ke atas
+                line.el.style.top = line.y + 'px';
+            });
+
+            // 4. Move Enemies & Check Collision
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                e.y += e.speed;
+                e.el.style.top = e.y + 'px';
+
+                // Hapus jika lewat bawah
+                if (e.y > config.roadHeight + 100) {
+                    e.el.remove();
+                    enemies.splice(i, 1);
+                    continue;
+                }
+
+                // Cek Tabrakan P1
+                if (player1.alive && checkCollision(player1, e)) {
+                    handleCrash('p1');
+                }
+                // Cek Tabrakan P2
+                if (player2.alive && checkCollision(player2, e)) {
+                    handleCrash('p2');
+                }
+            }
+
+            frameId = requestAnimationFrame(update);
+        }
+
+        function handleCrash(victim) {
+            state.running = false;
+            
+            if (victim === 'p1') {
+                player1.alive = false;
+                player1.el.classList.add('crashed');
+                endGame("PLAYER 2 WINS!", "Player 1 Crashed!");
+            } else {
+                player2.alive = false;
+                player2.el.classList.add('crashed');
+                endGame("PLAYER 1 WINS!", "Player 2 Crashed!");
+            }
+        }
+
+        function endGame(winMsg, reasonMsg) {
+            clearInterval(spawnInterval);
+            winnerText.innerText = winMsg;
+            reasonText.innerText = reasonMsg;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // --- Controls System ---
+        function bindControls() {
+            // Keyboard
+            window.addEventListener('keydown', (e) => {
+                if(!state.running) return;
+                const k = e.key.toLowerCase();
+                if(k === 'a') setInput(player1, 'left', true, 'p1Left');
+                if(k === 'd') setInput(player1, 'right', true, 'p1Right');
+                if(k === 'arrowleft') setInput(player2, 'left', true, 'p2Left');
+                if(k === 'arrowright') setInput(player2, 'right', true, 'p2Right');
+            });
+            window.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'a') setInput(player1, 'left', false, 'p1Left');
+                if(k === 'd') setInput(player1, 'right', false, 'p1Right');
+                if(k === 'arrowleft') setInput(player2, 'left', false, 'p2Left');
+                if(k === 'arrowright') setInput(player2, 'right', false, 'p2Right');
+            });
+
+            // Touch/Mouse Buttons
+            const attachBtn = (id, p, dir) => {
+                const btn = document.getElementById(id);
+                ['mousedown', 'touchstart'].forEach(evt => 
+                    btn.addEventListener(evt, (e) => { e.preventDefault(); setInput(p, dir, true, id); })
+                );
+                ['mouseup', 'mouseleave', 'touchend'].forEach(evt => 
+                    btn.addEventListener(evt, (e) => { e.preventDefault(); setInput(p, dir, false, id); })
+                );
+            };
+            attachBtn('p1Left', player1, 'left');
+            attachBtn('p1Right', player1, 'right');
+            attachBtn('p2Left', player2, 'left');
+            attachBtn('p2Right', player2, 'right');
+        }
+
+        function setInput(player, dir, isActive, btnId) {
+            player.controls[dir] = isActive;
+            const btn = document.getElementById(btnId);
+            if(isActive) btn.classList.add('pressed');
+            else btn.classList.remove('pressed');
+        }
+
+        // --- Initialization ---
+        function init() {
+            // Reset UI
+            gameOverScreen.style.display = 'none';
+            document.querySelectorAll('.car').forEach(c => c.remove());
+            enemies = [];
+
+            // Jika pertama kali, buat garis jalan
+            if(movingLines.length === 0) createMovingLines();
+
+            // Setup Players (Side by Side di Bawah)
+            // P1 di kiri (sekitar 25% lebar)
+            player1.x = (config.roadWidth * 0.25) - (config.carWidth / 2);
+            player1.alive = true;
+            player1.el = createCar(player1.x, config.playerY, 'player1', 'P1').el;
+
+            // P2 di kanan (sekitar 75% lebar)
+            player2.x = (config.roadWidth * 0.75) - (config.carWidth / 2);
+            player2.alive = true;
+            player2.el = createCar(player2.x, config.playerY, 'player2', 'P2').el;
+
+            // Reset Stats
+            state.speed = 0.1;
+            state.running = true;
+
+            // Start Loops
+            update();
+            spawnInterval = setInterval(spawnEnemy, 1000); // Base spawn rate
+        }
+
+        // Start
+        bindControls();
+        restartBtn.addEventListener('click', init);
+        init();
+
+    </script>
+</body>
+</html>

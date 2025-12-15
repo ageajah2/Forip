@@ -2,18 +2,17 @@
   {
     "title": "SNAKE 3D",
     "slug": "3d-snake",
-    "thumb": "games/3d-snake/thumb.png",
+    "thumb": "games/3d-snake/thumb.jpg",
     "path": "games/3d-snake/index.html",
     "tags": [
-      "arcade",
-      "two-player"
+      "arcade"
     ],
-    "author": "Admin"
+    "author": "GPT x Gemini"
   },
   {
     "title": "Bayam Growth",
     "slug": "bayam-growth",
-    "thumb": "games/bayam/thumb.png",
+    "thumb": "games/bayam/thumb.jpg",
     "path": "games/bayam/index.html",
     "tags": [
       "clicker",
@@ -25,19 +24,19 @@
   {
     "title": "Cyber Pong",
     "slug": "cyber-pong",
-    "thumb": "games/cyber-pong/thumb.png",
+    "thumb": "games/cyber-pong/thumb.jpg",
     "path": "games/cyber-pong/index.html",
     "tags": [
       "arcade",
       "retro",
-      "neon"
+      "two-player"
     ],
     "author": "Antigravity"
   },
   {
     "title": "Cosmic Dodge",
     "slug": "cosmic-dodge",
-    "thumb": "games/cosmic-dodge/thumb.png",
+    "thumb": "games/cosmic-dodge/thumb.jpg",
     "path": "games/cosmic-dodge/index.html",
     "tags": [
       "action",
@@ -49,7 +48,7 @@
   {
     "title": "Whack-a-Droid",
     "slug": "whack-a-droid",
-    "thumb": "games/whack-a-droid/thumb.png",
+    "thumb": "games/whack-a-droid/thumb.jpg",
     "path": "games/whack-a-droid/index.html",
     "tags": [
       "arcade",
@@ -59,19 +58,19 @@
     "author": "Antigravity"
   },
   {
-    "title": "Harun Masiku",
+    "title": "Masiku",
     "slug": "masiku",
-    "thumb": "games/masiku/thumb.png",
+    "thumb": "games/masiku/thumb.webp",
     "path": "games/masiku/index.html",
     "tags": [
-      "fun"
+      "politic"
     ],
-    "author": "Indo"
+    "author": "Warga"
   },
   {
     "title": "Neon Blaster",
     "slug": "neon-blaster",
-    "thumb": "games/neon-blaster/thumb.png",
+    "thumb": "games/neon-blaster/thumb.jpg",
     "path": "games/neon-blaster/index.html",
     "tags": [
       "action",
@@ -83,14 +82,46 @@
   {
     "title": "Pop Balul",
     "slug": "pop-balul",
-    "thumb": "games/pop-balul/thumb.jpg",
+    "thumb": "games/pop-balul/thumb.webp",
     "path": "games/pop-balul/index.html",
     "tags": [
       "action",
-      "corruption",
       "politic"
     ],
     "author": "Warga"
+  },
+  {
+    "title": "Race Duel",
+    "slug": "car-vs",
+    "thumb": "games/car-vs/thumb.jpg",
+    "path": "games/car-vs/index.html",
+    "tags": [
+      "racing",
+      "two-player"
+    ],
+    "author": "Gemini"
+  },
+  {
+    "title": "Pacu Balap Tap-Tap",
+    "slug": "pacu-balap",
+    "thumb": "games/pacu/thumb.jpg",
+    "path": "games/pacu/index.html",
+    "tags": [
+      "racing",
+      "two-player"
+    ],
+    "author": "Qwen x ChatGPT"
+  },
+  {
+    "title": "Space Defender",
+    "slug": "vs-ufo",
+    "thumb": "games/vs-ufo/thumb.jpg",
+    "path": "games/vs-ufo/index.html",
+    "tags": [
+      "action",
+      "space",
+      "shooter"
+    ],
+    "author": "Deepseek"
   }
-
 ]

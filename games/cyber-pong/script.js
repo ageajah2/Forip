@@ -16,7 +16,7 @@ const ball = {
 };
 
 const user = {
-    x: 0, 
+    x: 0,
     y: (canvas.height - 100) / 2,
     width: 15,
     height: 100,
@@ -24,7 +24,7 @@ const user = {
     score: 0
 };
 
-const com = {
+const player2 = {
     x: canvas.width - 15,
     y: (canvas.height - 100) / 2,
     width: 15,
@@ -50,13 +50,13 @@ function drawRect(x, y, w, h, color) {
 function drawArc(x, y, r, color) {
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI*2, true);
+    ctx.arc(x, y, r, 0, Math.PI * 2, true);
     ctx.closePath();
     ctx.fill();
 }
 
 function drawNet() {
-    for(let i = 0; i <= canvas.height; i+=15) {
+    for (let i = 0; i <= canvas.height; i += 15) {
         drawRect(net.x, net.y + i, net.width, net.height, net.color);
     }
 }
@@ -67,8 +67,8 @@ function resetBall() {
     ball.speed = 7;
     // Serve to the person who scored usually, or random
     // here we just flip X velocity
-    ball.velocityX = -ball.velocityX; 
-    ball.velocityY = 5 * (Math.random() > 0.5 ? 1 : -1); 
+    ball.velocityX = -ball.velocityX;
+    ball.velocityY = 5 * (Math.random() > 0.5 ? 1 : -1);
 }
 
 function collision(b, p) {
@@ -90,49 +90,49 @@ function update() {
     ball.x += ball.velocityX;
     ball.y += ball.velocityY;
 
-    // Simple AI
-    // Computer moves towards ball Y with some speed limit
-    let computerLevel = 0.1; 
-    com.y += ((ball.y - (com.y + com.height/2))) * computerLevel;
+    // Player 2 Movement (Keys)
+    const paddleSpeed = 8;
+    if (keys.a) player2.y -= paddleSpeed;
+    if (keys.d) player2.y += paddleSpeed;
 
     // Keep paddles in bounds
     if (user.y < 0) user.y = 0;
     if (user.y + user.height > canvas.height) user.y = canvas.height - user.height;
-    if (com.y < 0) com.y = 0;
-    if (com.y + com.height > canvas.height) com.y = canvas.height - com.height;
+    if (player2.y < 0) player2.y = 0;
+    if (player2.y + player2.height > canvas.height) player2.y = canvas.height - player2.height;
 
     // Wall collision (top/bottom)
-    if(ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+    if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
         ball.velocityY = -ball.velocityY;
     }
 
-    // Check Player or Com
-    let player = (ball.x + ball.radius < canvas.width/2) ? user : com;
+    // Check Player or Player2
+    let player = (ball.x + ball.radius < canvas.width / 2) ? user : player2;
 
-    if(collision(ball, player)) {
+    if (collision(ball, player)) {
         // Find where ball hit the player
-        let collidePoint = (ball.y - (player.y + player.height/2));
-        collidePoint = collidePoint / (player.height/2);
+        let collidePoint = (ball.y - (player.y + player.height / 2));
+        collidePoint = collidePoint / (player.height / 2);
 
         // Calc angle (Max 45 deg)
-        let angleRad = (Math.PI/4) * collidePoint;
+        let angleRad = (Math.PI / 4) * collidePoint;
 
         // Dir
-        let direction = (ball.x + ball.radius < canvas.width/2) ? 1 : -1;
-        
+        let direction = (ball.x + ball.radius < canvas.width / 2) ? 1 : -1;
+
         ball.velocityX = direction * ball.speed * Math.cos(angleRad);
         ball.velocityY = ball.speed * Math.sin(angleRad);
-        
+
         // Increase speed
         ball.speed += 0.2;
     }
 
     // Score update
-    if(ball.x - ball.radius < 0) {
-        com.score++;
-        computerScoreElem.innerText = com.score;
+    if (ball.x - ball.radius < 0) {
+        player2.score++;
+        computerScoreElem.innerText = player2.score;
         resetBall();
-    } else if(ball.x + ball.radius > canvas.width) {
+    } else if (ball.x + ball.radius > canvas.width) {
         user.score++;
         playerScoreElem.innerText = user.score;
         resetBall();
@@ -142,13 +142,13 @@ function update() {
 function render() {
     // Clear
     drawRect(0, 0, canvas.width, canvas.height, "#000");
-    
+
     drawNet();
-    
+
     // Paddles
     drawRect(user.x, user.y, user.width, user.height, user.color);
-    drawRect(com.x, com.y, com.width, com.height, com.color);
-    
+    drawRect(player2.x, player2.y, player2.width, player2.height, player2.color);
+
     // Ball
     drawArc(ball.x, ball.y, ball.radius, ball.color);
 }
@@ -161,16 +161,33 @@ function gameLoop() {
 // Mouse movement
 canvas.addEventListener("mousemove", (evt) => {
     let rect = canvas.getBoundingClientRect();
-    user.y = evt.clientY - rect.top - user.height/2;
+    user.y = evt.clientY - rect.top - user.height / 2;
 });
+
+// Player 2 Controls (Keyboard)
+const keys = {
+    a: false,
+    d: false
+};
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'a' || e.key === 'A') keys.a = true;
+    if (e.key === 'd' || e.key === 'D') keys.d = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.key === 'a' || e.key === 'A') keys.a = false;
+    if (e.key === 'd' || e.key === 'D') keys.d = false;
+});
+
 
 // Start
 const framePerSecond = 60;
-let loop = setInterval(gameLoop, 1000/framePerSecond);
+let loop = setInterval(gameLoop, 1000 / framePerSecond);
 
 restartBtn.addEventListener('click', () => {
     user.score = 0;
-    com.score = 0;
+    player2.score = 0;
     playerScoreElem.innerText = 0;
     computerScoreElem.innerText = 0;
     resetBall();
