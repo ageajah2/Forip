@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Race Duel - Side by Side</title>
+    <title>Race Duel - Responsive</title>
     <style>
         * {
             margin: 0;
@@ -16,7 +16,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh; /* Full viewport height */
             font-family: 'Segoe UI', sans-serif;
             color: white;
             overflow: hidden;
@@ -26,23 +26,30 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
             gap: 10px;
         }
         #gameContainer {
             position: relative;
-            width: 400px; /* Lebar ditambah sedikit agar muat 2 mobil sejajar */
-            height: 640px;
+            /* RESPONSIF: Gunakan persentase dan max-width */
+            width: 95%; 
+            max-width: 450px; 
+            /* RESPONSIF: Tinggi menyesuaikan layar, sisakan ruang untuk tombol */
+            height: 65vh; 
             background: #222;
             border: 4px solid #444;
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
             overflow: hidden;
+            border-radius: 4px;
         }
         #road {
             width: 100%;
             height: 100%;
             position: relative;
         }
-        /* Garis Jalan */
+        /* Garis Jalan Tengah */
         .lane {
             position: absolute;
             left: 50%;
@@ -65,7 +72,7 @@
             font-weight: bold;
             font-size: 14px;
             box-shadow: 0 5px 10px rgba(0,0,0,0.6);
-            transition: left 0.08s linear;
+            /* Hapus transition left agar responsif realtime lebih mulus */
             z-index: 5;
         }
         /* Desain Mobil */
@@ -85,7 +92,6 @@
             color: #e8f5e9;
         }
 
-        /* Efek ledakan sederhana */
         .crashed {
             transform: scale(0.9) rotate(5deg);
             filter: grayscale(100%) brightness(0.5);
@@ -97,14 +103,14 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 15px;
+            padding: 10px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
             z-index: 10;
             display: flex;
             justify-content: space-between;
             pointer-events: none;
         }
-        .score-box { font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; }
+        .score-box { font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px black; }
         
         #gameOver {
             position: absolute;
@@ -120,37 +126,48 @@
             z-index: 20;
             text-align: center;
         }
-        #winner { font-size: 36px; margin-bottom: 10px; color: gold; font-weight: bold; text-transform: uppercase; }
-        #reason { font-size: 16px; color: #ccc; margin-bottom: 30px; }
+        #winner { font-size: 28px; margin-bottom: 10px; color: gold; font-weight: bold; text-transform: uppercase; }
+        #reason { font-size: 14px; color: #ccc; margin-bottom: 20px; }
         
         #restartBtn {
             background: #ff9800; color: white; border: none;
-            padding: 15px 50px; font-size: 20px; border-radius: 50px;
+            padding: 12px 40px; font-size: 18px; border-radius: 50px;
             cursor: pointer; font-weight: bold;
             box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
         }
-        #restartBtn:hover { background: #ffa726; transform: scale(1.05); }
 
-        /* Controls */
+        /* Controls Responsive */
         #controls {
             display: flex;
             justify-content: space-between;
-            width: 400px;
-            padding: 0 10px;
+            /* Lebar mengikuti container game tapi tidak lebih lebar dari layar */
+            width: 95%;
+            max-width: 450px;
+            padding: 0 5px;
+            margin-top: 10px;
         }
-        .control-group { text-align: center; }
-        .control-label { font-size: 12px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        .btn-row { display: flex; gap: 15px; }
+        .control-group { 
+            text-align: center; 
+            flex: 1; /* Bagi rata ruang */
+        }
+        .control-label { font-size: 10px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-row { display: flex; gap: 10px; justify-content: center; }
+        
         .btn {
-            width: 65px; height: 65px;
-            background: rgba(255,255,255,0.08);
+            /* Ukuran tombol responsif */
+            width: 16vw; 
+            height: 16vw;
+            max-width: 70px;
+            max-height: 70px;
+            background: rgba(255,255,255,0.1);
             border: 2px solid #444;
-            border-radius: 15px;
+            border-radius: 12px;
             display: flex; justify-content: center; align-items: center;
-            font-size: 24px; color: #ddd; cursor: pointer;
+            font-size: 20px; color: #ddd; cursor: pointer;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        .btn:active, .btn.pressed { background: rgba(255,255,255,0.25); border-color: white; color: white; }
+        .btn:active, .btn.pressed { background: rgba(255,255,255,0.3); border-color: white; color: white; }
     </style>
 </head>
 <body>
@@ -159,14 +176,14 @@
         <div id="gameContainer">
             <div id="ui">
                 <div class="score-box" style="color: #42a5f5;">P1 (Blue)</div>
-                <div class="score-box" id="speed">Speed: 1.0x</div>
+                <div class="score-box" id="speed">1.0x</div>
                 <div class="score-box" style="color: #ef5350;">P2 (Red)</div>
             </div>
             
             <div id="road">
                 <div class="lane-divider-left"></div>
                 <div class="lane-divider-right"></div>
-                </div>
+            </div>
 
             <div id="gameOver">
                 <div id="winner">Player 1 Wins!</div>
@@ -177,24 +194,26 @@
 
         <div id="controls">
             <div class="control-group">
-                <div class="control-label">Player 1 (WASD)</div>
+                <div class="control-label">Player 1 (Left)</div>
                 <div class="btn-row">
                     <div class="btn" id="p1Left">A</div>
                     <div class="btn" id="p1Right">D</div>
                 </div>
             </div>
+            <div style="width: 10px;"></div>
             <div class="control-group">
-                <div class="control-label">Player 2 (Arrows)</div>
+                <div class="control-label">Player 2 (Right)</div>
                 <div class="btn-row">
                     <div class="btn" id="p2Left">←</div>
                     <div class="btn" id="p2Right">→</div>
                 </div>
             </div>
         </div>
-        <div style="margin-top: 15px; color: #555; font-size: 12px;">Dodge the Green Cars!</div>
+        <div style="margin-top: 10px; color: #666; font-size: 11px;">Dodge the Green Cars!</div>
     </div>
 
     <script>
+        const gameContainer = document.getElementById('gameContainer');
         const road = document.getElementById('road');
         const uiSpeed = document.getElementById('speed');
         const gameOverScreen = document.getElementById('gameOver');
@@ -202,13 +221,13 @@
         const reasonText = document.getElementById('reason');
         const restartBtn = document.getElementById('restartBtn');
 
-        // Config
-        const config = {
-            roadWidth: 400,
-            roadHeight: 640,
-            carWidth: 50,
-            carHeight: 85,
-            playerY: 520 // Posisi Y tetap (di bawah)
+        // Config Dinamis (Nilai awal 0, diisi saat init)
+        let config = {
+            roadWidth: 0,
+            roadHeight: 0,
+            carWidth: 45, // Sedikit diperkecil agar aman di layar sempit
+            carHeight: 80,
+            playerY: 0
         };
 
         const state = {
@@ -227,8 +246,12 @@
 
         // --- Visual Setup ---
         function createMovingLines() {
-            // Garis putus-putus di tengah jalan
-            for(let i=0; i<8; i++) {
+            // Bersihkan garis lama jika ada (saat resize)
+            movingLines.forEach(l => l.el.remove());
+            movingLines = [];
+
+            const lineCount = Math.ceil(config.roadHeight / 100) + 1;
+            for(let i=0; i<lineCount; i++) {
                 const line = document.createElement('div');
                 line.className = 'lane';
                 line.style.top = (i * 100) + 'px';
@@ -254,8 +277,7 @@
         function spawnEnemy() {
             if (!state.running) return;
 
-            // Logika spawn: Pilih jalur acak (0 sampai 3)
-            // Kita bagi jalan menjadi 4 jalur virtual agar lebih rapat
+            // Logika spawn dinamis berdasarkan lebar jalan saat ini
             const laneCount = 6;
             const laneWidth = config.roadWidth / laneCount;
             const randomLane = Math.floor(Math.random() * laneCount);
@@ -263,15 +285,14 @@
             // X position di tengah jalur tersebut
             const xPos = (randomLane * laneWidth) + (laneWidth - config.carWidth) / 2;
             
-            // Kecepatan random + speed level
             const enemySpeed = (4 + Math.random() * 3) * state.speed;
 
-            const enemy = createCar(xPos, -100, 'enemy', '▼');
+            const enemy = createCar(xPos, -120, 'enemy', '▼');
             enemies.push({ ...enemy, speed: enemySpeed });
         }
 
         function checkCollision(player, enemy) {
-            const padding = 8; // Hitbox sedikit lebih kecil dari gambar agar fair
+            const padding = 5; 
             return (
                 player.x < enemy.x + enemy.width - padding &&
                 player.x + config.carWidth > enemy.x + padding &&
@@ -283,35 +304,34 @@
         function update() {
             if (!state.running) return;
 
-            // 1. Difficulty ramping
+            // 1. Difficulty
             state.speed += state.speedIncrease;
-            uiSpeed.textContent = `Speed: ${state.speed.toFixed(1)}x`;
+            uiSpeed.textContent = `${state.speed.toFixed(1)}x`;
 
             // 2. Move Players
-            const moveSpeed = 6 * state.speed; // Pemain bergerak lebih responsif
+            // Speed bergerak relatif terhadap lebar layar agar konsisten
+            const moveSpeed = (config.roadWidth * 0.015) * state.speed; 
 
             if (player1.alive) {
-                if (player1.controls.left) player1.x = Math.max(5, player1.x - moveSpeed);
-                if (player1.controls.right) player1.x = Math.min((config.roadWidth / 1) - config.carWidth - 5, player1.x + moveSpeed); // P1 dibatasi ke tengah (opsional, tapi biar tidak nabrak P2 mudah)
-                
-                // Hapus batas atas jika ingin P1 bisa ke area P2:
-                // if (player1.controls.right) player1.x = Math.min(config.roadWidth - config.carWidth - 5, player1.x + moveSpeed);
-                
+                if (player1.controls.left) player1.x = Math.max(2, player1.x - moveSpeed);
+                // Batas kanan P1 (bebas atau dibatasi setengah layar, disini dibebaskan)
+                if (player1.controls.right) player1.x = Math.min(config.roadWidth - config.carWidth - 2, player1.x + moveSpeed);
                 player1.el.style.left = player1.x + 'px';
+                // Update posisi Y jika resize terjadi
+                player1.el.style.top = config.playerY + 'px';
             }
 
             if (player2.alive) {
-                if (player2.controls.left) player2.x = Math.max(5, player2.x - moveSpeed);
-                // if (player2.controls.left) player2.x = Math.max((config.roadWidth / 2) + 5, player2.x - moveSpeed); // P2 dibatasi di kanan
-                
-                if (player2.controls.right) player2.x = Math.min(config.roadWidth - config.carWidth - 5, player2.x + moveSpeed);
+                if (player2.controls.left) player2.x = Math.max(2, player2.x - moveSpeed);
+                if (player2.controls.right) player2.x = Math.min(config.roadWidth - config.carWidth - 2, player2.x + moveSpeed);
                 player2.el.style.left = player2.x + 'px';
+                player2.el.style.top = config.playerY + 'px';
             }
 
-            // 3. Move Background Lines (Efek Ngebut)
+            // 3. Move Background Lines
             movingLines.forEach(line => {
                 line.y += 12 * state.speed;
-                if (line.y > config.roadHeight) line.y -= 800; // Reset ke atas
+                if (line.y > config.roadHeight) line.y -= (config.roadHeight + 100); 
                 line.el.style.top = line.y + 'px';
             });
 
@@ -320,22 +340,16 @@
                 const e = enemies[i];
                 e.y += e.speed;
                 e.el.style.top = e.y + 'px';
+                // Update X juga jaga-jaga kalau resize (meski musuh lurus, ini opsional)
 
-                // Hapus jika lewat bawah
                 if (e.y > config.roadHeight + 100) {
                     e.el.remove();
                     enemies.splice(i, 1);
                     continue;
                 }
 
-                // Cek Tabrakan P1
-                if (player1.alive && checkCollision(player1, e)) {
-                    handleCrash('p1');
-                }
-                // Cek Tabrakan P2
-                if (player2.alive && checkCollision(player2, e)) {
-                    handleCrash('p2');
-                }
+                if (player1.alive && checkCollision(player1, e)) handleCrash('p1');
+                if (player2.alive && checkCollision(player2, e)) handleCrash('p2');
             }
 
             frameId = requestAnimationFrame(update);
@@ -343,15 +357,14 @@
 
         function handleCrash(victim) {
             state.running = false;
-            
             if (victim === 'p1') {
                 player1.alive = false;
                 player1.el.classList.add('crashed');
-                endGame("PLAYER 2 WINS!", "Player 1 Crashed!");
+                endGame("P2 WINS!", "Blue Crashed!");
             } else {
                 player2.alive = false;
                 player2.el.classList.add('crashed');
-                endGame("PLAYER 1 WINS!", "Player 2 Crashed!");
+                endGame("P1 WINS!", "Red Crashed!");
             }
         }
 
@@ -364,7 +377,6 @@
 
         // --- Controls System ---
         function bindControls() {
-            // Keyboard
             window.addEventListener('keydown', (e) => {
                 if(!state.running) return;
                 const k = e.key.toLowerCase();
@@ -381,14 +393,20 @@
                 if(k === 'arrowright') setInput(player2, 'right', false, 'p2Right');
             });
 
-            // Touch/Mouse Buttons
             const attachBtn = (id, p, dir) => {
                 const btn = document.getElementById(id);
+                // PreventDefault penting di mobile agar tidak zoom/select
                 ['mousedown', 'touchstart'].forEach(evt => 
-                    btn.addEventListener(evt, (e) => { e.preventDefault(); setInput(p, dir, true, id); })
+                    btn.addEventListener(evt, (e) => { 
+                        if(e.cancelable) e.preventDefault(); 
+                        setInput(p, dir, true, id); 
+                    }, {passive: false})
                 );
                 ['mouseup', 'mouseleave', 'touchend'].forEach(evt => 
-                    btn.addEventListener(evt, (e) => { e.preventDefault(); setInput(p, dir, false, id); })
+                    btn.addEventListener(evt, (e) => { 
+                        if(e.cancelable) e.preventDefault(); 
+                        setInput(p, dir, false, id); 
+                    }, {passive: false})
                 );
             };
             attachBtn('p1Left', player1, 'left');
@@ -404,40 +422,67 @@
             else btn.classList.remove('pressed');
         }
 
-        // --- Initialization ---
+        // --- Initialization & Resizing ---
+        function updateDimensions() {
+            // Ambil ukuran real dari elemen container
+            config.roadWidth = gameContainer.offsetWidth;
+            config.roadHeight = gameContainer.offsetHeight;
+            
+            // Posisi pemain selalu di bawah (sekitar 15-20% dari bawah)
+            config.playerY = config.roadHeight - config.carHeight - 20;
+
+            // Update posisi mobil pemain jika sedang berjalan
+            if(player1.el) player1.el.style.top = config.playerY + 'px';
+            if(player2.el) player2.el.style.top = config.playerY + 'px';
+        }
+
         function init() {
-            // Reset UI
+            // Bersihkan
             gameOverScreen.style.display = 'none';
             document.querySelectorAll('.car').forEach(c => c.remove());
             enemies = [];
+            
+            // Hitung ukuran layar
+            updateDimensions();
+            createMovingLines();
 
-            // Jika pertama kali, buat garis jalan
-            if(movingLines.length === 0) createMovingLines();
-
-            // Setup Players (Side by Side di Bawah)
-            // P1 di kiri (sekitar 25% lebar)
+            // P1 Posisi Awal (25% dari kiri)
             player1.x = (config.roadWidth * 0.25) - (config.carWidth / 2);
             player1.alive = true;
+            player1.controls = { left: false, right: false };
             player1.el = createCar(player1.x, config.playerY, 'player1', 'P1').el;
 
-            // P2 di kanan (sekitar 75% lebar)
+            // P2 Posisi Awal (75% dari kiri)
             player2.x = (config.roadWidth * 0.75) - (config.carWidth / 2);
             player2.alive = true;
+            player2.controls = { left: false, right: false };
             player2.el = createCar(player2.x, config.playerY, 'player2', 'P2').el;
 
-            // Reset Stats
-            state.speed = 0.1;
+            state.speed = 0.5; // Start speed agak lambat biar enak
             state.running = true;
 
-            // Start Loops
+            cancelAnimationFrame(frameId);
+            clearInterval(spawnInterval);
+            
             update();
-            spawnInterval = setInterval(spawnEnemy, 1000); // Base spawn rate
+            spawnInterval = setInterval(spawnEnemy, 1000);
         }
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            updateDimensions();
+            createMovingLines();
+            // Jaga pemain tetap di dalam layar saat resize
+            if(player1.x > config.roadWidth - config.carWidth) player1.x = config.roadWidth - config.carWidth;
+            if(player2.x > config.roadWidth - config.carWidth) player2.x = config.roadWidth - config.carWidth;
+        });
 
         // Start
         bindControls();
         restartBtn.addEventListener('click', init);
-        init();
+        
+        // Init awal (timeout kecil untuk memastikan layout load)
+        setTimeout(init, 100);
 
     </script>
 </body>
