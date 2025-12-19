@@ -58,7 +58,7 @@
     "author": "Antigravity"
   },
   {
-    "title": "Masiku",
+    "title": "Harun Masiku",
     "slug": "masiku",
     "thumb": "games/masiku/thumb.webp",
     "path": "games/masiku/index.html",
@@ -130,4 +130,5 @@
   "tags": [    "clicker",    "two-player"  ],  "author": "ChatGPT x Qwen"},
   {  "title": "Mood Tap-Tap",  "slug": "mood1",  "thumb": "games/mood1/thumb.jpg",  "path": "games/mood1/index.html",  
   "tags": [    "asmr"  ],  "author": "ChatGPT"}
+
 ]
