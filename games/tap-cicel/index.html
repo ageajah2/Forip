@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Game Tap Lingkaran 2 Player - Versi Cepat (PointerDown)</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      /* Mencegah highlight biru saat tap cepat di mobile */
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    #game {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+    .player {
+      flex: 1;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-left: 3px solid #222;
+      background: linear-gradient(180deg, #1e1e1e, #000);
+    }
+    .player-label {
+      position: absolute;
+      bottom: 12px;
+      font-size: 14px;
+      opacity: 0.6;
+      letter-spacing: 2px;
+      pointer-events: none;
+    }
+    .circle {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(255,255,255,0.3);
+      touch-action: none; /* Penting agar browser tidak delay saat touch */
+      transition: transform 0.05s ease; /* Transisi dipercepat sedikit */
+      cursor: pointer;
+    }
+    .circle:active {
+      transform: scale(0.9);
+    }
+    .hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 18px;
+      background: rgba(0,0,0,0.5);
+      padding: 6px 12px;
+      border-radius: 12px;
+      pointer-events: none; /* Agar HUD tidak menghalangi klik */
+    }
+    #timer {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 28px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 20px;
+      border-radius: 20px;
+    }
+    #result {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 32px;
+      z-index: 20;
+    }
+    #result button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 18px;
+      border-radius: 30px;
+      border: none;
+      background: #00c853;
+      color: #000;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="timer">60</div>
+  <div id="game">
+    <div class="player" id="p1">
+      <div class="hud">Player 1: <span id="score1">0</span></div>
+      <div class="player-label">PLAYER 1</div>
+      <div class="circle" id="circle1"></div>
+    </div>
+    <div class="player" id="p2">
+      <div class="hud">Player 2: <span id="score2">0</span></div>
+      <div class="player-label">PLAYER 2</div>
+      <div class="circle" id="circle2"></div>
+    </div>
+  </div>
+
+  <div id="result">
+    <div id="winner"></div>
+    <button onclick="location.reload()">Main Lagi</button>
+  </div>
+
+<script>
+  let score1 = 0;
+  let score2 = 0;
+  let timeLeft = 60;
+  let spawnTime = performance.now();
+
+  const circle1 = document.getElementById('circle1');
+  const circle2 = document.getElementById('circle2');
+  const p1 = document.getElementById('p1');
+
+  circle1.style.background = 'radial-gradient(circle at top left, #ff5252, #b71c1c)';
+  circle2.style.background = 'radial-gradient(circle at top left, #448aff, #0d47a1)';
+
+  function randomSharedPosition() {
+    const rect = p1.getBoundingClientRect();
+    const size = 90;
+
+    // Pastikan lingkaran tidak keluar batas
+    const x = Math.random() * (rect.width - size);
+    const y = Math.random() * (rect.height - size);
+
+    circle1.style.left = x + 'px';
+    circle1.style.top = y + 'px';
+    circle2.style.left = x + 'px';
+    circle2.style.top = y + 'px';
+
+    // Reset waktu spawn
+    spawnTime = performance.now();
+  }
+
+  // UBAHAN UTAMA DI SINI:
+  // Menggunakan 'pointerdown' menggantikan 'click'
+  // pointerdown merespons saat tombol ditekan/jari menyentuh layar
+  
+  circle1.addEventListener('pointerdown', (e) => {
+    // Mencegah event bawaan (seperti zoom atau scroll)
+    e.preventDefault(); 
+    
+    const reaction = Math.round(performance.now() - spawnTime);
+
+    score1++;
+    document.getElementById('score1').textContent = score1;
+
+    showMs(circle1, reaction);
+    randomSharedPosition();
+  });
+
+  circle2.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+
+    const reaction = Math.round(performance.now() - spawnTime);
+
+    score2++;
+    document.getElementById('score2').textContent = score2;
+
+    showMs(circle2, reaction);
+    randomSharedPosition();
+  });
+
+  // Memulai posisi awal
+  randomSharedPosition();
+
+  const timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timer').textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      endGame();
+    }
+  }, 1000);
+
+  function endGame() {
+    document.getElementById('result').style.display = 'flex';
+    let text = 'Seri!';
+    if (score1 > score2) text = 'Player 1 Menang!';
+    if (score2 > score1) text = 'Player 2 Menang!';
+    document.getElementById('winner').textContent = text;
+  }
+
+  // Lock orientation jika memungkinkan
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+
+  function showMs(circle, ms) {
+    const label = document.createElement('div');
+    label.textContent = ms + 'ms';
+    label.style.position = 'absolute';
+    label.style.top = '30px';
+    label.style.left = '50%';
+    label.style.transform = 'translateX(-50%)';
+    label.style.fontSize = '14px';
+    label.style.fontWeight = 'bold';
+    label.style.textShadow = '1px 1px 2px black'; // Tambah shadow agar lebih jelas
+    label.style.color = '#0f0';
+    label.style.pointerEvents = 'none';
+
+    circle.appendChild(label);
+
+    setTimeout(() => label.remove(), 600);
+  }
+
+</script>
+
+</body>
+</html>

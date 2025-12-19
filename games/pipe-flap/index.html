@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipe Flap</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #70c5ce);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      color: white;
+      user-select: none;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow: hidden; /* Mencegah scroll saat bermain */
+    }
+
+    /* Container utama dibuat responsif */
+    .container {
+      position: relative;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 400px; /* Batas lebar maksimal agar tidak terlalu lebar di PC */
+    }
+
+    canvas {
+      display: block;
+      width: 100%;     /* Responsif mengisi container */
+      height: auto;    /* Menjaga aspek rasio */
+      background: #70c5ce;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 4px solid #5eb9db;
+      touch-action: none; /* Mencegah scroll browser saat menyentuh canvas */
+    }
+
+    .panel {
+      margin: 15px auto;
+      padding: 10px;
+      background-color: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      width: 100%;
+    }
+
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    label {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      max-width: 300px;
+      height: 20px;
+      -webkit-appearance: none;
+      background: #2c3e50;
+      outline: none;
+      border-radius: 10px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #f1c40f;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+
+    /* SKOR MENGAMBANG DI ATAS CANVAS */
+    .score {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3rem; /* Ukuran diperbesar sedikit */
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      color: white;
+      z-index: 5; /* Pastikan di atas canvas */
+      pointer-events: none; /* Agar klik tembus ke canvas */
+    }
+
+    #restartPanel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+      z-index: 10;
+      width: 80%;
+      display: none; 
+    }
+
+    button {
+      padding: 12px 30px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      background: #f1c40f;
+      color: #2c3e50;
+      border: none;
+      border-radius: 50px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background: #e67e22;
+      transform: scale(1.05);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .instructions {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #ecf0f1;
+      background-color: rgba(0,0,0,0.3);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .score { font-size: 2.5rem; }
+      #restartPanel { width: 90%; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="score"><span id="score">0</span></div>
+  
+  <canvas id="game" width="400" height="600"></canvas>
+
+  <div id="restartPanel">
+    <h2>GAME OVER!</h2>
+    <p>Skor Akhir: <span id="finalScore">0</span></p>
+    <button onclick="restartGame()">Main Lagi</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="panel">
+    <div class="slider-container">
+      <label for="speedSlider">Kecepatan Game:</label>
+      <input type="range" id="speedSlider" min="1" max="8" value="3">
+    </div>
+  </div>
+
+  <div class="panel instructions">
+    <p>Geser layar untuk menggerakkan pipa.</p>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const speedSlider = document.getElementById("speedSlider");
+const restartPanel = document.getElementById("restartPanel");
+const scoreEl = document.getElementById("score");
+const finalScoreEl = document.getElementById("finalScore");
+
+// === STATE ===
+let gameOver = false;
+let score = 0;
+let holding = false;
+
+// === BURUNG ===
+const bird = {
+  x: 80,
+  baseY: 300,
+  targetY: 300,
+  y: 300,
+  radius: 12,
+  floatTime: 0
+};
+
+// === PIPA ===
+const pipe = {
+  x: 400,
+  width: 60,
+  gap: 150,
+  y: 200,
+  speed: 3,
+  passed: false
+};
+
+// === UTIL ===
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// === INPUT KEYBOARD (OPSIONAL) ===
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp") pipe.y = Math.max(0, pipe.y - 20);
+  if (e.key === "ArrowDown") pipe.y = Math.min(canvas.height - pipe.gap, pipe.y + 20);
+});
+
+// === MOUSE & TOUCH CONTROL ===
+canvas.addEventListener("mousedown", (e) => {
+  holding = true;
+  handleMove(e);
+});
+canvas.addEventListener("mousemove", handleMove);
+canvas.addEventListener("mouseup", () => holding = false);
+canvas.addEventListener("mouseleave", () => holding = false);
+
+canvas.addEventListener("touchstart", (e) => {
+  holding = true;
+  // e.preventDefault() dihapus/dipindah agar slider tetap bisa jalan jika diluar canvas,
+  // tapi touch-action:none di CSS sudah menangani canvas.
+  handleTouch(e);
+}, {passive: false});
+
+canvas.addEventListener("touchmove", (e) => {
+    // Prevent default hanya jika menyentuh canvas untuk mencegah scroll halaman
+    if(e.cancelable) e.preventDefault(); 
+    handleTouch(e);
+}, {passive: false});
+
+canvas.addEventListener("touchend", () => holding = false);
+
+// Fungsi bantu untuk mendapatkan posisi Y yang akurat meski canvas di-resize CSS
+function getInputY(clientY) {
+  const rect = canvas.getBoundingClientRect();
+  // Hitung skala: Tinggi Internal Canvas (600) / Tinggi Tampilan Visual di Layar
+  const scaleY = canvas.height / rect.height; 
+  return (clientY - rect.top) * scaleY;
+}
+
+function handleMove(e) {
+  if (!holding || gameOver) return;
+  const mouseY = getInputY(e.clientY);
+  pipe.y = Math.min(Math.max(mouseY - pipe.gap / 2, 0), canvas.height - pipe.gap);
+}
+
+function handleTouch(e) {
+  if (!holding || gameOver) return;
+  const touchY = getInputY(e.touches[0].clientY);
+  pipe.y = Math.min(Math.max(touchY - pipe.gap / 2, 0), canvas.height - pipe.gap);
+}
+
+// === UPDATE ===
+function update() {
+  if (gameOver) return;
+
+  pipe.speed = Number(speedSlider.value);
+
+  // Smooth bird movement
+  bird.baseY = lerp(bird.baseY, bird.targetY, 0.05);
+  bird.floatTime += 0.05;
+  bird.y = bird.baseY + Math.sin(bird.floatTime) * 10;
+
+  // Move pipe
+  pipe.x -= pipe.speed;
+
+  // Passed pipe
+  if (!pipe.passed && pipe.x + 10 + pipe.width < bird.x) {
+    pipe.passed = true;
+    score++;
+    scoreEl.textContent = score;
+    bird.targetY = Math.random() * (canvas.height - 200) + 100;
+  }
+
+  // Reset pipe
+  if (pipe.x + pipe.width < 0) {
+    pipe.x = canvas.width;
+    pipe.passed = false;
+  }
+
+  // Collision
+  if (
+    bird.x + bird.radius > pipe.x &&
+    bird.x - bird.radius < pipe.x + pipe.width &&
+    (bird.y - bird.radius < pipe.y ||
+     bird.y + bird.radius > pipe.y + pipe.gap)
+  ) {
+    endGame();
+  }
+}
+
+// === DRAW ===
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw background elements
+  ctx.fillStyle = "#70c5ce";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Bird
+  ctx.beginPath();
+  ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+  ctx.fillStyle = "#FFD700"; 
+  ctx.fill();
+  ctx.strokeStyle = "#DAA520";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Eye
+  ctx.beginPath();
+  ctx.arc(bird.x + 5, bird.y - 3, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "black";
+  ctx.fill();
+
+  // Beak
+  ctx.beginPath();
+  ctx.moveTo(bird.x + 12, bird.y);
+  ctx.lineTo(bird.x + 20, bird.y);
+  ctx.lineTo(bird.x + 12, bird.y + 4);
+  ctx.closePath();
+  ctx.fillStyle = "#FF8C00";
+  ctx.fill();
+
+  // Pipes
+  ctx.fillStyle = "#2ECC71";
+  ctx.fillRect(pipe.x, 0, pipe.width, pipe.y);
+  ctx.fillRect(pipe.x, pipe.y + pipe.gap, pipe.width, canvas.height);
+
+  // Pipe caps
+  ctx.fillStyle = "#27AE60";
+  ctx.fillRect(pipe.x - 3, pipe.y - 20, pipe.width + 6, 20);
+  ctx.fillRect(pipe.x - 3, pipe.y + pipe.gap, pipe.width + 6, 20);
+}
+
+// === LOOP ===
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// === GAME CONTROL ===
+function endGame() {
+  gameOver = true;
+  finalScoreEl.textContent = score;
+  restartPanel.style.display = "block";
+}
+
+function restartGame() {
+  gameOver = false;
+  restartPanel.style.display = "none";
+
+  score = 0;
+  scoreEl.textContent = score;
+
+  pipe.x = canvas.width;
+  pipe.y = 200;
+  pipe.passed = false;
+
+  bird.baseY = 300;
+  bird.targetY = 300;
+  bird.floatTime = 0;
+}
+</script>
+
+</body>
+</html>

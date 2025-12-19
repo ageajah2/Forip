@@ -80,7 +80,7 @@
     "author": "Antigravity"
   },
   {
-    "title": "Pop Balul",
+    "title": "Pop Balil",
     "slug": "pop-balul",
     "thumb": "games/pop-balul/thumb.webp",
     "path": "games/pop-balul/index.html",
@@ -123,5 +123,11 @@
       "shooter"
     ],
     "author": "Deepseek"
-  }
+  },
+  {  "title": "Pipe Flap",  "slug": "pipe-flap",  "thumb": "games/pipe-flap/thumb.jpg",  "path": "games/pipe-flap/index.html",  
+  "tags": [    "arcade",    "action"  ],  "author": "GPT x Qwen x Gemini"},
+  {  "title": "Tap Reaction",  "slug": "tap-cicel",  "thumb": "games/tap-cicel/thumb.jpg",  "path": "games/tap-cicel/index.html",  
+  "tags": [    "clicker",    "two-player"  ],  "author": "ChatGPT x Qwen"},
+  {  "title": "Mood Tap-Tap",  "slug": "mood1",  "thumb": "games/mood1/thumb.jpg",  "path": "games/mood1/index.html",  
+  "tags": [    "asmr"  ],  "author": "ChatGPT"}
 ]

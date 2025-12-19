@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Kepala Terbang</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      background: #0f0f1a; color: white; font-family: system-ui, sans-serif;
+      touch-action: manipulation;
+    }
+    #ui {
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,.5); padding: 8px 14px; border-radius: 999px;
+      font-weight: 600; font-size: 14px;
+    }
+    #hint {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      opacity: .7; font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="ui">Skor: <span id="score">0</span> | Mood: <span id="mood">😐</span></div>
+  <div id="hint">Tap / Klik layar untuk menampar kepala</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const moodEl = document.getElementById('mood');
+
+function resize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+addEventListener('resize', resize);
+resize();
+
+let score = 0;
+let gravity = 0.15;
+let shake = 0;
+
+const head = {
+  x: canvas.width/2,
+  y: canvas.height/2,
+  r: 45,
+  vx: 0,
+  vy: 0,
+  face: '😐'
+};
+
+const moods = ['😐','😵','🤪','😡','🤯','👽','😭'];
+
+function slap(x, y) {
+  const dx = head.x - x;
+  const dy = head.y - y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < head.r + 80) {
+    head.vx += dx * 0.05 + (Math.random()-0.5)*10;
+    head.vy += dy * 0.05 - 10;
+    score++;
+    head.face = moods[Math.floor(Math.random()*moods.length)];
+    shake = 10;
+    scoreEl.textContent = score;
+    moodEl.textContent = head.face;
+  }
+}
+
+canvas.addEventListener('pointerdown', e => slap(e.clientX, e.clientY));
+
+function drawHead() {
+  ctx.save();
+  ctx.translate(head.x, head.y);
+  ctx.beginPath();
+  ctx.arc(0,0,head.r,0,Math.PI*2);
+  ctx.fillStyle = '#ffd6a5';
+  ctx.fill();
+  ctx.font = `${head.r}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(head.face, 0, 5);
+  ctx.restore();
+}
+
+function update() {
+  ctx.save();
+  if (shake > 0) {
+    ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+    shake--;
+  }
+
+  ctx.clearRect(-50,-50,canvas.width+100,canvas.height+100);
+
+  head.vy += gravity;
+  head.x += head.vx;
+  head.y += head.vy;
+
+  head.vx *= 0.99;
+  head.vy *= 0.99;
+
+  // Bouncing aneh
+  if (head.x < head.r || head.x > canvas.width - head.r) head.vx *= -1;
+  if (head.y > canvas.height - head.r) {
+    head.y = canvas.height - head.r;
+    head.vy *= -0.85;
+  }
+
+  drawHead();
+
+  ctx.restore();
+  requestAnimationFrame(update);
+}
+
+update();
+</script>
+</body>
+</html>
