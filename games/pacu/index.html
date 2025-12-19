@@ -118,11 +118,11 @@ let p2Speed = 0;
 let p1Tap = 0;
 let p2Tap = 0;
 
-/* === ANTI HOLD LOCK === */
-let p1Lock = false;
-let p2Lock = false;
+let p1StartTime = null;
+let p2StartTime = null;
+let p1FinishTime = null;
+let p2FinishTime = null;
 
-/* === GAMBAR MOBIL === */
 const p1Img = new Image();
 const p2Img = new Image();
 let p1Loaded = false;
@@ -133,16 +133,17 @@ p2Img.onload = ()=>p2Loaded=true;
 p1Img.src = "pacu1.webp";
 p2Img.src = "pacu2.webp";
 
-/* === KEYBOARD (ANTI HOLD) === */
 document.addEventListener("keydown", e=>{
     if(!gameRunning) return;
 
     if((e.key==="d"||e.key==="D") && !p1Lock){
+        if (p1StartTime === null) p1StartTime = Date.now();
         p1Speed+=1;
         p1Tap++;
         p1Lock=true;
     }
     if(e.key==="ArrowRight" && !p2Lock){
+        if (p2StartTime === null) p2StartTime = Date.now();
         p2Speed+=1;
         p2Tap++;
         p2Lock=true;
@@ -154,10 +155,10 @@ document.addEventListener("keyup", e=>{
     if(e.key==="ArrowRight") p2Lock=false;
 });
 
-/* === MOBILE (ANTI HOLD) === */
 tapP1.addEventListener("touchstart", e=>{
     e.preventDefault();
     if(!gameRunning||p1Lock) return;
+    if (p1StartTime === null) p1StartTime = Date.now();
     p1Speed+=1;
     p1Tap++;
     p1Lock=true;
@@ -167,13 +168,13 @@ tapP1.addEventListener("touchend", ()=>p1Lock=false);
 tapP2.addEventListener("touchstart", e=>{
     e.preventDefault();
     if(!gameRunning||p2Lock) return;
+    if (p2StartTime === null) p2StartTime = Date.now();
     p2Speed+=1;
     p2Tap++;
     p2Lock=true;
 });
 tapP2.addEventListener("touchend", ()=>p2Lock=false);
 
-/* === GAME === */
 function drawTrack(){
     ctx.fillStyle="#2a3c5e";
     ctx.fillRect(0,trackY1-15,canvas.width,70);
@@ -215,7 +216,14 @@ function update(){
     p1Speed*=0.95;
     p2Speed*=0.95;
 
-    if(p1Pos>=finishLine||p2Pos>=finishLine){
+    if(p1Pos>=finishLine && p1FinishTime === null){
+        p1FinishTime = Date.now();
+    }
+    if(p2Pos>=finishLine && p2FinishTime === null){
+        p2FinishTime = Date.now();
+    }
+
+    if(p1Pos>=finishLine || p2Pos>=finishLine){
         gameRunning=false;
         const w=document.getElementById("winnerScreen");
         const t=document.getElementById("winnerText");
@@ -224,10 +232,10 @@ function update(){
 
         if(p1Pos>p2Pos){
             t.textContent="PEMAIN 1 MENANG";
-            m.textContent=`Tap: ${p1Tap}`;
+            m.textContent=`Waktu: ${(p1FinishTime - p1StartTime) / 1000} detik`;
         }else if(p2Pos>p1Pos){
             t.textContent="PEMAIN 2 MENANG";
-            m.textContent=`Tap: ${p2Tap}`;
+            m.textContent=`Waktu: ${(p2FinishTime - p2StartTime) / 1000} detik`;
         }else{
             t.textContent="SERI!";
             m.textContent="Finish bersamaan";
@@ -254,6 +262,10 @@ function restart(){
     p1Pos=p2Pos=50;
     p1Speed=p2Speed=0;
     p1Tap=p2Tap=0;
+    p1StartTime = null;
+    p2StartTime = null;
+    p1FinishTime = null;
+    p2FinishTime = null;
     document.getElementById("winnerScreen").style.display="none";
 }
 </script>
