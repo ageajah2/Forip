@@ -71,13 +71,14 @@
         <select id="filter">
           <option value="all">Semua</option>
         </select>
-        <button id="addBtn">+ Tambah (helper)</button>
+        <button id="addBtn">+Help</button>
       </div>
     </header>
 
     <main>
       <div id="grid" class="grid"></div>
-      <footer>Tip: letakkan folder game di <code>/games/&lt;slug&gt;/index.html</code> dan tambahkan entry di <code>/games/games.json</code>.</footer>
+	  <footer>Tip: Permainan biasanya menggunakan WASD atau arrow keys.</footer>
+      <footer>Tip for Dev: Letakkan folder game di repo <code>/games/&lt;slug&gt;/index.html</code> dan tambahkan entry di <code>/games/games.json</code>.</footer>
     </main>
   </div>
 
@@ -230,16 +231,16 @@ window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
 /* Add entry helper (unchanged) */
 document.getElementById('addBtn').addEventListener('click', ()=>{
-  const title = prompt('Judul game (contoh: Flappy Bird)');
+  const title = prompt('Permainan biasanya menggunakan spasi, WASD atau arrow keys.\nFor dev: Buat judul game (contoh: Tanam Sawit)');
   if(!title) return;
-  const slug = (prompt('Slug folder (tanpa spasi, contoh: flappy-bird)')||title.toLowerCase().replace(/[^a-z0-9\\-]/g,'-'));
+  const slug = (prompt('Slug folder (tanpa spasi, contoh: tanam-sawit)')||title.toLowerCase().replace(/[^a-z0-9\\-]/g,'-'));
   const thumb = `games/${slug}/thumb.png`;
   const path = `games/${slug}/index.html`;
-  const tags = (prompt('Tag, pisahkan koma (contoh: arcade,one-player)')||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const tags = (prompt('Tag, pisahkan koma (contoh: arcade,politic)')||'').split(',').map(s=>s.trim()).filter(Boolean);
   const author = prompt('Author (opsional)')||'';
   const entry = { title, slug, thumb, path, tags, author };
   const jsonLine = JSON.stringify(entry, null, 2);
-  prompt('Salin blok JSON ini dan tambahkan ke games/games.json', jsonLine);
+  prompt('Salin blok JSON ini dan tambahkan ke repo games/games.json', jsonLine);
 });
 
 /* init */
