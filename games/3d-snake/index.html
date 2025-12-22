@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voxel Snake 3D - Mirror Floor</title>
+    <title>Voxel Snake ERTEEX</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; }
         
@@ -62,6 +62,49 @@
             font-weight: bold;
         }
         button:hover { background: #45a049; transform: scale(1.05); }
+		
+#virtual-controls {
+    position: fixed;
+    bottom: 50px;
+    left: 50px;              /* pindah ke kiri */
+    z-index: 30;
+    user-select: none;
+}
+
+
+#virtual-controls .row {
+    display: flex;
+    justify-content: center;
+    margin: 6px 0;
+}
+
+#virtual-controls button {
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    width: 56px;
+    height: 56px;
+    margin: 4px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+}
+
+#virtual-controls button:active {
+    background: #4caf50;
+    transform: scale(0.95);
+}
+
+#virtual-controls button.wide {
+    width: 120px;
+}
+
+#virtual-controls button.mirror {
+    background: rgba(76, 175, 80, 0.6);
+}
+
     </style>
     
     <script type="importmap">
@@ -99,6 +142,22 @@
         <p id="final-score" style="font-size: 20px;">Score: 0</p>
         <button onclick="resetGame()">Main Lagi</button>
     </div>
+	
+	<div id="virtual-controls">
+    <div class="row">
+        <button data-key="w">W</button>
+    </div>
+    <div class="row">
+        <button data-key="a">A</button>
+        <button data-key="s">S</button>
+        <button data-key="d">D</button>
+    </div>
+    <div class="row">
+        <button class="wide" data-key=" ">SPASI</button>
+        <button class="wide mirror" data-key="m">M</button>
+    </div>
+</div>
+
 
     <script type="module">
         import * as THREE from 'three';
@@ -107,6 +166,9 @@
         import { Reflector } from 'three/addons/objects/Reflector.js';
 
         // --- KONFIGURASI ---
+		const SKY_BLUE = new THREE.Color(0x87ceeb); // biru langit
+		const DARK_BG  = new THREE.Color(0x111111);
+
         const BOARD_SIZE = 17;
         const CUBE_SIZE = 1;
         const SPEED = 110;
@@ -136,6 +198,27 @@
         
         const snakeGroup = new THREE.Group();
         const foodGroup = new THREE.Group();
+		
+		function simulateKey(key) {
+    const event = new KeyboardEvent('keydown', {
+        key: key
+    });
+    window.dispatchEvent(event);
+}
+
+// Pasang event ke tombol virtual
+document.querySelectorAll('#virtual-controls button').forEach(btn => {
+    btn.addEventListener('touchstart', e => {
+        e.preventDefault();
+        simulateKey(btn.dataset.key);
+    });
+
+    btn.addEventListener('mousedown', e => {
+        e.preventDefault();
+        simulateKey(btn.dataset.key);
+    });
+});
+
 
         // --- INIT ---
         function init() {
@@ -217,26 +300,37 @@
         }
 
         // --- LOGIKA GANTI LANTAI (MIRROR TOGGLE) ---
-        function toggleMirrorMode() {
-            isReflective = !isReflective;
-            const statusText = document.getElementById('mirror-status');
+				function toggleMirrorMode() {
+			isReflective = !isReflective;
+			const statusText = document.getElementById('mirror-status');
 
-            if (isReflective) {
-                // Mode Cermin ON
-                scene.remove(defaultFloor);
-                scene.add(mirrorFloor);
-                gridHelper.visible = false; // Sembunyikan grid agar pantulan bersih
-                statusText.innerText = "Lantai: Cermin (Reflektif)";
-                statusText.style.color = "#4caf50";
-            } else {
-                // Mode Cermin OFF (Standar)
-                scene.remove(mirrorFloor);
-                scene.add(defaultFloor);
-                gridHelper.visible = true; // Tampilkan grid kembali
-                statusText.innerText = "Lantai: Standar";
-                statusText.style.color = "#aaa";
-            }
-        }
+			if (isReflective) {
+				// MODE CERMIN ON
+				scene.remove(defaultFloor);
+				scene.add(mirrorFloor);
+				gridHelper.visible = false;
+
+				// 🌤️ Langit biru
+				scene.background = SKY_BLUE;
+				scene.fog = new THREE.Fog(0x87ceeb, 30, 80);
+
+				statusText.innerText = "Lantai: Cermin (Reflektif)";
+				statusText.style.color = "#4caf50";
+			} else {
+				// MODE CERMIN OFF
+				scene.remove(mirrorFloor);
+				scene.add(defaultFloor);
+				gridHelper.visible = true;
+
+				// 🌑 Kembali ke gelap
+				scene.background = DARK_BG;
+				scene.fog = new THREE.Fog(0x111111, 20, 60);
+
+				statusText.innerText = "Lantai: Standar";
+				statusText.style.color = "#aaa";
+			}
+		}
+
 
         // --- LOGIKA KAMERA & KONTROL ---
         function toggleCameraMode() {
