@@ -59,6 +59,19 @@
       .preview{ width:98vw; height:84vh; border-radius:10px; }
       .preview .bar{padding:6px}
     }
+
+		  .grid{
+	  display:grid;
+	  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+	  gap:14px;
+	}
+	
+	@media (max-width: 600px){
+	  .grid{
+	    grid-template-columns: repeat(2, 1fr);
+	  }
+	}
+
   </style>
 </head>
 <body>
@@ -248,4 +261,5 @@ loadGames();
 </script>
 </body>
 </html>
+
 
