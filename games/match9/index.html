@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Game Match-3 Bentuk</title>
   <style>
+    :root {
+      /* responsive cell size */
+      --cell-size: min(12vw, 60px);
+      --gap-size: min(1.5vw, 6px);
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #222;
@@ -15,41 +21,70 @@
       height: 100vh;
       margin: 0;
       touch-action: none;
+      overflow: hidden;
     }
-    #wrap { position: relative; }
+
+    h1 {
+      position: absolute;
+      top: 8px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: clamp(16px, 4.5vw, 28px);
+      margin: 0;
+      color: #ffd740;
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+
+    #wrap {
+      position: relative;
+      margin-top: clamp(32px, 10vw, 64px);
+    }
+
     #hud {
       position: absolute;
-      top: -48px;
+      top: calc(-1 * clamp(32px, 8vw, 48px));
       left: 0;
       right: 0;
       display: flex;
       justify-content: space-between;
-      font-size: 18px;
+      font-size: clamp(12px, 3.5vw, 18px);
       padding: 0 6px;
     }
+
     #game {
       display: grid;
-      grid-template-columns: repeat(8, 60px);
-      gap: 6px;
+      grid-template-columns: repeat(8, var(--cell-size));
+      gap: var(--gap-size);
       background: #111;
-      padding: 12px;
+      padding: calc(var(--gap-size) * 2);
       border-radius: 12px;
+      touch-action: none;
     }
+
     .cell {
-      width: 60px;
-      height: 60px;
+      width: var(--cell-size);
+      height: var(--cell-size);
       background: #333;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 44px;
+      font-size: calc(var(--cell-size) * 0.7);
       border-radius: 10px;
       user-select: none;
-      transition: transform .2s, opacity .2s;
+      transition: transform .15s, opacity .15s;
     }
-    .dragging { transform: scale(1.2); z-index: 2; }
+
+    .dragging { transform: scale(1.15); z-index: 2; }
     .empty { opacity: 0; }
-    img { pointer-events: none; }
+
+    img {
+      pointer-events: none;
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+    }
 
     #overlay {
       position: fixed;
@@ -59,14 +94,24 @@
       justify-content: center;
       align-items: center;
       z-index: 10;
+      padding: 12px;
     }
+
     #popup {
       background: #222;
-      padding: 30px 40px;
+      padding: clamp(16px, 5vw, 30px) clamp(20px, 6vw, 40px);
       border-radius: 16px;
       text-align: center;
-      font-size: 22px;
+      font-size: clamp(14px, 4vw, 22px);
       line-height: 1.5;
+      max-width: 90vw;
+    }
+
+    /* extra small phones */
+    @media (max-width: 360px) {
+      :root {
+        --cell-size: min(13vw, 52px);
+      }
     }
   </style>
 </head>
