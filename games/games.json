@@ -58,7 +58,7 @@
     "author": "Antigravity"
   },
   {
-    "title": "Harun Masiku",
+    "title": "Masiku",
     "slug": "masiku",
     "thumb": "games/masiku/thumb.webp",
     "path": "games/masiku/index.html",
@@ -130,5 +130,6 @@
   "tags": [    "clicker",    "two-player"  ],  "author": "ChatGPT x Qwen"},
   {  "title": "Mood Tap-Tap",  "slug": "mood1",  "thumb": "games/mood1/thumb.jpg",  "path": "games/mood1/index.html",  
   "tags": [    "asmr"  ],  "author": "ChatGPT"}
-
+  {  "title": "Match 9",  "slug": "match9",  "thumb": "games/match9/thumb.jpg",  "path": "games/match9/index.html",  
+  "tags": [    "arcade",    "politic"  ],  "author": "Warga"}
 ]

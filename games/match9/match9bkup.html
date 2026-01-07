@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Game Match-3 Bentuk</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      touch-action: none;
+    }
+    #wrap { position: relative; }
+    #hud {
+      position: absolute;
+      top: -48px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 18px;
+      padding: 0 6px;
+    }
+    #game {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      gap: 6px;
+      background: #111;
+      padding: 12px;
+      border-radius: 12px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 44px;
+      border-radius: 10px;
+      user-select: none;
+      transition: transform .2s, opacity .2s;
+    }
+    .dragging { transform: scale(1.2); z-index: 2; }
+    .empty { opacity: 0; }
+    img { pointer-events: none; }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    #popup {
+      background: #222;
+      padding: 30px 40px;
+      border-radius: 16px;
+      text-align: center;
+      font-size: 22px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div id="score">Skor: 0</div>
+    <div id="time">Waktu: 0.0s</div>
+  </div>
+  <div id="game"></div>
+</div>
+
+<div id="overlay"><div id="popup"></div></div>
+
+<script>
+  const width = 8;
+  const TARGET_MULYONO = 9;
+  const MULYONO_IMAGE = 'solo.png';
+
+  const shapes = [
+    { icon: '▲', color: '#ff5252' },
+    { icon: '■', color: '#40c4ff' },
+    { icon: '●', color: '#69f0ae' },
+    { icon: '★', color: '#ffd740' },
+    { icon: '⬟', color: '#b388ff' }
+  ];
+
+  const specialImages = [
+    { weight: 3, image: 'balil.png' },
+    { weight: 3, image: 'pigui.png' },
+    { weight: 3, image: 'zulhas.png' },
+    { weight: 3, image: 'saroni.png' }
+  ];
+
+  const board = [];
+  let dragIndex = null;
+  let gameOver = false;
+  let mulyonoCount = 0;
+  let score = 0;
+
+  // stopwatch
+  let startTime = 0;
+  let timerHandle = null;
+
+  const game = document.getElementById('game');
+  const overlay = document.getElementById('overlay');
+  const popup = document.getElementById('popup');
+  const scoreEl = document.getElementById('score');
+  const timeEl = document.getElementById('time');
+
+  /* ---------- helpers ---------- */
+
+  function randomShape() {
+    return shapes[Math.floor(Math.random() * shapes.length)];
+  }
+
+  function weightedSpecial() {
+    const pool = [];
+    specialImages.forEach(s => {
+      for (let i = 0; i < s.weight; i++) pool.push(s);
+    });
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function addScore(delta) {
+    score += delta;
+    scoreEl.textContent = 'Skor: ' + score.toLocaleString('id-ID');
+  }
+
+  function startTimer() {
+    startTime = performance.now();
+    if (timerHandle) clearInterval(timerHandle);
+    timerHandle = setInterval(() => {
+      if (gameOver) return;
+      const sec = (performance.now() - startTime) / 1000;
+      timeEl.textContent = 'Waktu: ' + sec.toFixed(1) + 's';
+    }, 100);
+  }
+
+  function stopTimer() {
+    if (timerHandle) clearInterval(timerHandle);
+  }
+
+  /* ---------- render & state ---------- */
+
+  function setCell(cell, data) {
+    cell.innerHTML = '';
+
+    if (!data) {
+      cell.dataset.type = 'empty';
+      cell.dataset.value = '';
+      cell.dataset.special = '';
+      cell.dataset.color = '';
+      cell.style.color = '';
+      cell.classList.add('empty');
+      return;
+    }
+
+    cell.dataset.type = data.type;
+    cell.dataset.value = data.value || '';
+    cell.dataset.special = data.special || '';
+    cell.dataset.color = data.color || '';
+    cell.classList.remove('empty');
+
+    if (data.image) {
+      const img = document.createElement('img');
+      img.src = data.image;
+      img.style.width = '80%';
+      img.style.height = '80%';
+      img.style.objectFit = 'contain';
+      img.draggable = false;
+      cell.appendChild(img);
+      cell.style.color = '';
+    } else {
+      cell.textContent = data.value;
+      cell.style.color = data.color;
+    }
+  }
+
+  function getCellData(cell) {
+    if (cell.dataset.type === 'empty') return null;
+    return {
+      type: cell.dataset.type,
+      value: cell.dataset.value,
+      special: cell.dataset.special,
+      color: cell.dataset.color,
+      image: cell.querySelector('img') ? cell.querySelector('img').src : null
+    };
+  }
+
+  /* ---------- board ---------- */
+
+  function createBoard() {
+    game.innerHTML = '';
+    board.length = 0;
+    gameOver = false;
+    mulyonoCount = 0;
+    score = 0;
+    scoreEl.textContent = 'Skor: 0';
+    overlay.style.display = 'none';
+
+    for (let i = 0; i < width * width; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+
+      const s = randomShape();
+      setCell(cell, { type: 'shape', value: s.icon, color: s.color });
+      addTouch(cell);
+
+      board.push(cell);
+      game.appendChild(cell);
+    }
+
+    startTimer();
+  }
+
+  /* ---------- input ---------- */
+
+  function addTouch(cell) {
+    cell.addEventListener('pointerdown', () => {
+      if (gameOver) return;
+      dragIndex = Number(cell.dataset.index);
+      cell.classList.add('dragging');
+    });
+
+    cell.addEventListener('pointerenter', () => {
+      if (dragIndex === null || gameOver) return;
+      const target = Number(cell.dataset.index);
+      swapCells(dragIndex, target);
+      dragIndex = target;
+    });
+
+    cell.addEventListener('pointerup', endDrag);
+    cell.addEventListener('pointerleave', e => { if (e.buttons === 0) endDrag(); });
+  }
+
+  function endDrag() {
+    if (gameOver) return;
+    board.forEach(c => c.classList.remove('dragging'));
+    dragIndex = null;
+    checkMatches();
+  }
+
+  function swapCells(a, b) {
+    const da = getCellData(board[a]);
+    const db = getCellData(board[b]);
+    setCell(board[a], db);
+    setCell(board[b], da);
+    board[b].classList.add('dragging');
+  }
+
+  /* ---------- scoring helpers ---------- */
+
+  // match 3 = 1 point, then x2 for each extra tile
+  function scoreForNormalMatch(n) {
+    if (n < 3) return 0;
+    return Math.pow(2, n - 3);
+  }
+
+  /* ---------- match logic ---------- */
+
+  function checkMatches() {
+    if (gameOver) return;
+
+    board.forEach(c => c.classList.remove('to-clear'));
+
+    // ---- SHAPE horizontal ----
+    for (let r = 0; r < width; r++) {
+      const base = r * width;
+      let count = 1;
+      for (let c = 1; c <= width; c++) {
+        const prev = board[base + c - 1];
+        const curr = c < width ? board[base + c] : null;
+        if (curr && curr.dataset.value === prev.dataset.value && prev.dataset.type === 'shape') {
+          count++;
+        } else {
+          if (count >= 3 && prev.dataset.type === 'shape') {
+            for (let k = 0; k < count; k++) {
+              board[base + c - 1 - k].classList.add('to-clear');
+            }
+            addScore(scoreForNormalMatch(count));
+          }
+          count = 1;
+        }
+      }
+    }
+
+    // ---- SHAPE vertical ----
+    for (let c = 0; c < width; c++) {
+      let count = 1;
+      for (let r = 1; r <= width; r++) {
+        const prev = board[(r - 1) * width + c];
+        const curr = r < width ? board[r * width + c] : null;
+        if (curr && curr.dataset.value === prev.dataset.value && prev.dataset.type === 'shape') {
+          count++;
+        } else {
+          if (count >= 3 && prev.dataset.type === 'shape') {
+            for (let k = 0; k < count; k++) {
+              board[(r - 1 - k) * width + c].classList.add('to-clear');
+            }
+            addScore(scoreForNormalMatch(count));
+          }
+          count = 1;
+        }
+      }
+    }
+
+    // ---- SPECIAL IMAGE: only match FULL ROW (8) ----
+    for (let r = 0; r < width; r++) {
+      const base = r * width;
+      const row = board.slice(base, base + width);
+      const allSpecial = row.every(c => c.dataset.type === 'special' && c.dataset.special === 'normal');
+      if (allSpecial) {
+        row.forEach(c => c.classList.add('to-clear'));
+        // fixed score for image match
+        addScore(1000);
+      }
+    }
+
+    const cleared = board.filter(c => c.classList.contains('to-clear'));
+
+    // ---- spawn Mulyono ONLY if match >= 9 shapes cleared at once ----
+    if (cleared.length >= 9) {
+      const target = cleared[Math.floor(Math.random() * cleared.length)];
+      setTimeout(() => {
+        setCell(target, { type: 'special', value: '', image: MULYONO_IMAGE, special: 'mulyono' });
+        mulyonoCount++;
+
+        // bonus score when collected 9 mulyono
+        if (mulyonoCount >= TARGET_MULYONO) {
+          addScore(11_000_000);
+          endGame();
+        }
+      }, 150);
+    }
+
+    // ---- clear ----
+    cleared.forEach(c => setCell(c, null));
+
+    // ---- spawn normal special for match 5–8 ----
+    if (cleared.length >= 5 && cleared.length < 9) {
+      const target = cleared[Math.floor(Math.random() * cleared.length)];
+      setTimeout(() => {
+        const sp = weightedSpecial();
+        setCell(target, { type: 'special', value: '', image: sp.image, special: 'normal' });
+      }, 150);
+    }
+
+    if (cleared.length > 0) setTimeout(dropShapes, 300);
+  }
+
+  function endGame() {
+    gameOver = true;
+    stopTimer();
+    const totalSec = (performance.now() - startTime) / 1000;
+    popup.innerHTML = `🎉 GAME SELESAI 🎉<br/>
+      <b>Mulyono:</b> ${TARGET_MULYONO}<br/>
+      <b>Skor:</b> ${score.toLocaleString('id-ID')}<br/>
+      <b>Waktu:</b> ${totalSec.toFixed(1)} detik`;
+    overlay.style.display = 'flex';
+  }
+
+  /* ---------- gravity ---------- */
+
+  function dropShapes() {
+    if (gameOver) return;
+
+    for (let col = 0; col < width; col++) {
+      const stack = [];
+      for (let row = width - 1; row >= 0; row--) {
+        const d = getCellData(board[row * width + col]);
+        if (d) stack.push(d);
+      }
+      for (let row = width - 1; row >= 0; row--) {
+        const idx = row * width + col;
+        if (stack.length) setCell(board[idx], stack.shift());
+        else {
+          const s = randomShape();
+          setCell(board[idx], { type: 'shape', value: s.icon, color: s.color });
+        }
+      }
+    }
+
+    setTimeout(checkMatches, 200);
+  }
+
+  /* ---------- tests ---------- */
+
+  function runSelfTests() {
+    console.assert(board.length === width * width, 'Board size invalid');
+    console.assert(board.every(c => c.dataset.type), 'Missing cell type');
+    console.assert(board.every(c => c.dataset.type !== 'shape' || c.dataset.color), 'Shape lost color');
+    console.assert(scoreForNormalMatch(3) === 1, 'Score rule 3 wrong');
+    console.assert(scoreForNormalMatch(4) === 2, 'Score rule 4 wrong');
+    console.assert(scoreForNormalMatch(5) === 4, 'Score rule 5 wrong');
+  }
+
+  createBoard();
+  runSelfTests();
+</script>
+</body>
+</html>
