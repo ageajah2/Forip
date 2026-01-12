@@ -131,6 +131,7 @@
   {  "title": "Mood Tap-Tap",  "slug": "mood1",  "thumb": "games/mood1/thumb.jpg",  "path": "games/mood1/index.html",  
   "tags": [    "asmr"  ],  "author": "ChatGPT"},
   {  "title": "Match 9",  "slug": "match9",  "thumb": "games/match9/thumb.jpg",  "path": "games/match9/index.html",  
-  "tags": [    "arcade",    "politic"  ],  "author": "Warga"}
-
+  "tags": [    "arcade",    "politic"  ],  "author": "Warga"},
+  {  "title": "MBG Rush",  "slug": "mbgrush",  "thumb": "games/mbgrush/thumb.png",  "path": "games/mbgrush/index.html",
+  "tags": [    "racing"  ],  "author": "Warga"}
 ]

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobil Platformer - Fitur Dana</title>
+    <style>
+        body {
+            margin: 0; padding: 0; background-color: #87CEEB;
+            overflow: hidden; font-family: 'Segoe UI', sans-serif; touch-action: none;
+        }
+        canvas { display: block; }
+
+        /* UI Atas (Skor & Dana) */
+        #ui-container {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: none; z-index: 10;
+        }
+
+        #left-panel { text-shadow: 1px 1px 2px black; color: white; font-size: 14px; }
+        
+        #center-panel {
+            background: rgba(0,0,0,0.6);
+            color: #FFD700; /* Warna Emas */
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            border: 2px solid #FFD700;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        #score-board {
+            display: flex; gap: 15px; background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px; border-radius: 20px; color: white;
+            font-weight: bold; font-size: 16px;
+            backdrop-filter: blur(4px);
+        }
+        .text-gizi { color: #90EE90; } .text-racun { color: #FFB6C1; }
+
+        /* Layar Game Over */
+        #game-over-screen {
+            display: none; /* Sembunyi saat main */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        #game-over-screen h1 { font-size: 40px; color: #ff4444; margin-bottom: 10px; }
+        .stat-box { font-size: 20px; margin: 5px 0; }
+        button {
+            margin-top: 20px; padding: 15px 30px; font-size: 20px;
+            background: #228B22; color: white; border: none; border-radius: 5px;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+
+        /* Kontrol Mobile */
+        #mobile-controls {
+            position: absolute; bottom: 20px; width: 100%; height: 100px;
+            display: none; pointer-events: none; z-index: 20;
+        }
+        .btn-group-left { position: absolute; left: 20px; bottom: 10px; pointer-events: auto; }
+        .btn-group-right { position: absolute; right: 20px; bottom: 10px; pointer-events: auto; }
+        .control-btn {
+            width: 70px; height: 70px; background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white; border-radius: 50%; color: white;
+            font-size: 24px; display: inline-flex; justify-content: center;
+            align-items: center; margin: 0 5px;
+        }
+        .control-btn:active { background: rgba(255,255,255,0.4); transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div id="left-panel">
+            [A][D] Gerak<br>[Spasi] Lompat
+        </div>
+        
+        <div id="center-panel">
+            Dana: <span id="dana-val">Rp 600.000.000</span>
+        </div>
+
+        <div id="score-board">
+            <span class="text-gizi">Bergizi: <span id="val-gizi">0</span></span>
+            <span style="color:white">|</span>
+            <span class="text-racun">Keracunan: <span id="val-racun">0</span></span>
+        </div>
+    </div>
+
+    <div id="game-over-screen">
+        <h1>GAME OVER</h1>
+        <div class="stat-box">APBN Habis!<br>Butuh lebih banyak pajak!</div>
+        <hr style="width: 50%; border-color: #555;">
+        <div class="stat-box text-gizi">Makanan Bergizi: <span id="end-gizi">0</span></div>
+        <div class="stat-box text-racun">Yang Beracun: <span id="end-racun">0</span></div>
+        <div class="stat-box" style="color:yellow">Waktu: <span id="end-time">0s</span></div>
+        <button onclick="location.reload()">Main Lagi</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="mobile-controls">
+        <div class="btn-group-left">
+            <div class="control-btn" id="btn-left">◄</div>
+            <div class="control-btn" id="btn-right">►</div>
+        </div>
+        <div class="btn-group-right">
+            <div class="control-btn" id="btn-jump">▲</div>
+        </div>
+    </div>
+
+    <script>
+        // --- SETUP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const elGizi = document.getElementById('val-gizi');
+        const elRacun = document.getElementById('val-racun');
+        const elDana = document.getElementById('dana-val');
+        const screenGameOver = document.getElementById('game-over-screen');
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
+
+        // --- ASET ---
+        const imgKanan = new Image(); imgKanan.src = 'bgn1ka.png';
+        const imgKiri = new Image(); imgKiri.src = 'bgn1ki.png';
+        const imgSiswa = new Image(); imgSiswa.src = 'siswa.webp';
+        const spriteConfig = { totalFrames: 4, frameWidth: 64, frameHeight: 96 };
+        imgSiswa.onload = function() { if(imgSiswa.naturalWidth > 0) { spriteConfig.frameWidth = imgSiswa.naturalWidth / spriteConfig.totalFrames; spriteConfig.frameHeight = imgSiswa.naturalHeight; }}
+
+        // --- GAME STATE ---
+        let scoreGizi = 0; 
+        let scoreRacun = 0;
+        let dana = 600000000; // 600 Juta
+        let isGameOver = false;
+        let startTime = Date.now(); // Mencatat waktu mulai
+
+        const keys = { a: false, d: false, space: false };
+        const player = {
+            x: 0, y: 0, width: 120, height: 70, vx: 0, vy: 0,
+            acceleration: 0.5, maxSpeed: 12, friction: 0.94,
+            jumpPower: -20, gravity: 0.8, grounded: false, facingRight: true
+        };
+        
+        let cameraX = 0;
+        let platforms = [{ x: -500, y: canvas.height - 100, width: 1500, height: 100 }];
+        let people = [];
+        let clouds = [];
+        for(let i=0; i<15; i++) { clouds.push({ x: (Math.random() * 3000) - 1500, y: Math.random() * (canvas.height/2), scale: 0.5 + Math.random() }); }
+
+        // Format Rupiah
+        const formatRupiah = (number) => {
+            return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(number);
+        }
+        elDana.innerText = formatRupiah(dana);
+
+        // --- FUNGSI GAME OVER ---
+        function triggerGameOver() {
+            isGameOver = true;
+            let duration = Math.floor((Date.now() - startTime) / 1000);
+            
+            // Set Data Layar Akhir
+            document.getElementById('end-gizi').innerText = scoreGizi;
+            document.getElementById('end-racun').innerText = scoreRacun;
+            document.getElementById('end-time').innerText = duration + " detik";
+            
+            // Tampilkan Layar
+            screenGameOver.style.display = 'flex';
+        }
+
+        // --- LOGIKA GENERASI ---
+        function createPerson(px, py, pw) {
+            if(Math.random() > 0.6) {
+                people.push({ x: px + Math.random()*(pw-50), y: py - 80, width: 50, height: 80, type: Math.random()>0.5 ? 'nutritious' : 'poisonous', frameIndex: Math.floor(Math.random()*4), collected: false });
+            }
+        }
+        function generateMap() {
+            const limit = 3000;
+            platforms = platforms.filter(p => p.x > player.x - limit && p.x < player.x + limit);
+            people = people.filter(p => p.x > player.x - limit && p.x < player.x + limit && !p.collected);
+            clouds = clouds.filter(c => c.x > player.x - limit && c.x < player.x + limit);
+            if (platforms.length === 0) platforms.push({ x: player.x - 200, y: canvas.height - 100, width: 600, height: 100 });
+
+            let maxX = -Infinity, minX = Infinity;
+            platforms.forEach(p => { if (p.x + p.width > maxX) maxX = p.x + p.width; if (p.x < minX) minX = p.x; });
+
+            if (player.x + 1500 > maxX) {
+                let w = Math.random() * 400 + 200; let ny = Math.max(canvas.height - 400, Math.min(canvas.height - 50, platforms[platforms.length-1].y + (Math.random()*200 - 100)));
+                let nx = maxX + Math.random() * 150 + 50; platforms.push({ x: nx, y: ny, width: w, height: 100 }); createPerson(nx, ny, w);
+            }
+            if (player.x - 1500 < minX) {
+                let w = Math.random() * 400 + 200; let ny = Math.max(canvas.height - 400, Math.min(canvas.height - 50, platforms[0].y + (Math.random()*200 - 100)));
+                let nx = minX - (Math.random() * 150 + 50) - w; platforms.push({ x: nx, y: ny, width: w, height: 100 }); createPerson(nx, ny, w);
+            }
+
+            let maxCX = -Infinity, minCX = Infinity;
+            if(clouds.length === 0) { clouds.push({x: player.x, y: 100, scale: 1}); maxCX = player.x; minCX = player.x; } else { clouds.forEach(c => { if (c.x > maxCX) maxCX = c.x; if (c.x < minCX) minCX = c.x; }); }
+            if(player.x + 1500 > maxCX) clouds.push({ x: maxCX + 400 + Math.random()*400, y: Math.random()*(canvas.height/2), scale: 0.5+Math.random() });
+            if(player.x - 1500 < minCX) clouds.push({ x: minCX - 400 - Math.random()*400, y: Math.random()*(canvas.height/2), scale: 0.5+Math.random() });
+        }
+
+        // --- INPUT & UPDATE ---
+        window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'a') keys.a = true; if(e.key.toLowerCase() === 'd') keys.d = true; if(e.code === 'Space') keys.space = true; });
+        window.addEventListener('keyup', e => { if(e.key.toLowerCase() === 'a') keys.a = false; if(e.key.toLowerCase() === 'd') keys.d = false; if(e.code === 'Space') keys.space = false; });
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) document.getElementById('mobile-controls').style.display = 'block';
+        function addTouch(id, k) { const b = document.getElementById(id); b.addEventListener('touchstart', e => { e.preventDefault(); keys[k] = true; }); b.addEventListener('touchend', e => { e.preventDefault(); keys[k] = false; }); }
+        addTouch('btn-left','a'); addTouch('btn-right','d'); addTouch('btn-jump','space');
+
+        function update() {
+            if (isGameOver) return; // Stop update jika game over
+
+            // Fisika
+            if(keys.d) { player.vx += player.acceleration; player.facingRight = true; }
+            if(keys.a) { player.vx -= player.acceleration; player.facingRight = false; }
+            if((!keys.a && !keys.d) || (keys.a && keys.d)) { player.vx *= player.friction; if(Math.abs(player.vx)<0.1) player.vx = 0; }
+            if(player.vx > player.maxSpeed) player.vx = player.maxSpeed; if(player.vx < -player.maxSpeed) player.vx = -player.maxSpeed;
+            if(keys.space && player.grounded) { player.vy = player.jumpPower; player.grounded = false; }
+            player.vy += player.gravity; player.x += player.vx; player.y += player.vy;
+
+            // Kolisi Tanah
+            player.grounded = false;
+            platforms.forEach(p => {
+                if(player.x + 20 < p.x + p.width && player.x + player.width - 20 > p.x && player.y + player.height > p.y && player.y < p.y + p.height) {
+                    if(player.vy > 0 && player.y + player.height - player.vy <= p.y + 15) { player.grounded = true; player.vy = 0; player.y = p.y - player.height; }
+                }
+            });
+
+            // Kolisi Orang
+            people.forEach(p => {
+                if(!p.collected && player.x < p.x + p.width && player.x + player.width > p.x && player.y < p.y + p.height && player.y + player.height > p.y) {
+                    p.collected = true; if(p.type === 'nutritious') scoreGizi++; else scoreRacun++; elGizi.innerText = scoreGizi; elRacun.innerText = scoreRacun;
+                }
+            });
+
+            // --- JATUH KE JURANG (DANA BERKURANG) ---
+            if(player.y > canvas.height + 500) { 
+                // Kurangi Dana
+                dana -= 200000000;
+                
+                // Update UI Dana
+                elDana.innerText = formatRupiah(dana);
+                elDana.parentElement.style.color = "red";
+                setTimeout(() => elDana.parentElement.style.color = "#FFD700", 500);
+
+                // Cek Game Over
+                if (dana < 0) {
+                    triggerGameOver();
+                    return;
+                }
+
+                // Respawn Aman
+                player.y = -200; player.vy = 0; player.vx = 0; 
+                let safePlat = platforms.find(p => Math.abs(p.x - player.x) < 1000) || platforms[0]; 
+                if(safePlat) player.x = safePlat.x; 
+            }
+
+            cameraX += (player.x - canvas.width/2 + player.width/2 - cameraX) * 0.1;
+            generateMap();
+        }
+
+        // --- RENDER ---
+        function drawCloud(ctx, x, y, s) {
+            ctx.beginPath(); ctx.arc(x, y, 30*s, 0, Math.PI*2); ctx.arc(x+25*s, y-10*s, 35*s, 0, Math.PI*2); ctx.arc(x+50*s, y, 30*s, 0, Math.PI*2); ctx.fill();
+        }
+
+        function draw() {
+            const grad = ctx.createLinearGradient(0,0,0,canvas.height);
+            grad.addColorStop(0, '#87CEEB'); grad.addColorStop(1, '#E0F7FA');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(Math.round(-cameraX), 0);
+
+            // Objek Dunia Game
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            clouds.forEach(c => drawCloud(ctx, c.x, c.y, c.scale));
+
+            platforms.forEach(p => {
+                ctx.fillStyle = '#654321'; ctx.fillRect(p.x, p.y, p.width, p.height);
+                ctx.fillStyle = '#32CD32'; ctx.fillRect(p.x, p.y, p.width, 20);
+            });
+
+            people.forEach(p => {
+                if(p.collected) return;
+                if(imgSiswa.complete && imgSiswa.naturalWidth > 0) {
+                    let sx = p.frameIndex * spriteConfig.frameWidth; ctx.drawImage(imgSiswa, sx, 0, spriteConfig.frameWidth, spriteConfig.frameHeight, p.x, p.y, p.width, p.height);
+                } else { ctx.fillStyle = p.type==='nutritious' ? 'green' : 'red'; ctx.fillRect(p.x, p.y, p.width, p.height); }
+            });
+
+            if (!isGameOver) {
+                let img = player.facingRight ? imgKanan : imgKiri;
+                if(img.complete && img.naturalWidth > 0) { ctx.drawImage(img, player.x, player.y, player.width, player.height); }
+                else { ctx.fillStyle = 'red'; ctx.fillRect(player.x, player.y, player.width, player.height); ctx.fillStyle = 'yellow'; let lx = player.facingRight ? player.x+player.width-20 : player.x; ctx.fillRect(lx, player.y+10, 20, 20); }
+            }
+
+            ctx.restore();
+            
+            // Loop terus berjalan meskipun game over, agar bisa menggambar frame terakhir
+            if (!isGameOver) requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop() { update(); draw(); }
+        gameLoop();
+    </script>
+</body>
+</html>
