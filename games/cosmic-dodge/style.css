@@ -19,6 +19,10 @@ body {
 canvas {
     background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
     display: block;
+    max-width: 100vw;
+    max-height: 100vh;
+    object-fit: contain;
+    touch-action: none;
 }
 
 #ui-layer {
@@ -96,6 +100,10 @@ canvas {
 #start-btn:hover {
     transform: scale(1.05);
     box-shadow: 0 0 30px rgba(71, 107, 255, 0.8);
+}
+
+#start-btn:active {
+    transform: scale(0.95);
 }
 
 @keyframes blink {

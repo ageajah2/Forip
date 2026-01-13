@@ -17,6 +17,9 @@ body {
     box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
     border-radius: 5px;
     background: #0a0a1a;
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
 }
 
 h1 {
@@ -43,6 +46,7 @@ h1 {
     font-weight: bold;
     pointer-events: none;
     text-shadow: 1px 1px 0 #000;
+    z-index: 25;
 }
 
 #score {
@@ -59,7 +63,77 @@ h1 {
 
 canvas {
     display: block;
+    width: 100%;
+    height: auto;
     cursor: crosshair;
+    background: #050510;
+    touch-action: none;
+}
+
+/* Mobile Controls */
+.mobile-controls {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    padding: 0 20px;
+    box-sizing: border-box;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.joystick-group {
+    display: flex;
+    gap: 15px;
+    pointer-events: auto;
+}
+
+.action-group {
+    display: flex;
+    gap: 15px;
+    pointer-events: auto;
+}
+
+.control-btn {
+    width: 70px;
+    height: 70px;
+    background: rgba(0, 243, 255, 0.1);
+    border: 2px solid rgba(0, 243, 255, 0.5);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #00f3ff;
+    font-size: 24px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.control-btn:active {
+    background: rgba(0, 243, 255, 0.4);
+    transform: scale(0.95);
+}
+
+.control-btn.wide {
+    width: 100px;
+    border-radius: 35px;
+}
+
+@media (max-width: 900px) {
+    .mobile-controls {
+        display: flex;
+    }
+
+    .controls-hint {
+        display: none;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+        top: -40px;
+    }
 }
 
 #game-over {
@@ -73,7 +147,7 @@ canvas {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 10;
+    z-index: 30;
 }
 
 .hidden {
@@ -85,6 +159,7 @@ h2 {
     color: #ff0055;
     text-shadow: 0 0 20px #ff0055;
     margin-bottom: 0;
+    text-align: center;
 }
 
 #final-score {
@@ -114,7 +189,7 @@ button:hover {
 
 .controls-hint {
     position: absolute;
-    bottom: 10px;
+    bottom: -30px;
     width: 100%;
     text-align: center;
     color: rgba(255, 255, 255, 0.5);

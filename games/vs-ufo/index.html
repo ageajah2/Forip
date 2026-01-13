@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Defender</title>
+    <title>Space Defender - Joystick Edition</title>
     <style>
         * {
             margin: 0;
@@ -31,38 +31,41 @@
             top: 10px;
             left: 10px;
             font-size: 18px;
+            pointer-events: none; /* Agar tidak mengganggu touch */
         }
-        #mobileControls {
+        
+        /* Joystick Styles */
+        #joystick-zone {
             position: absolute;
-            bottom: 20px;
-            width: 100%;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-        }
-        .btn-row {
-            display: flex;
-            gap: 20px;
-        }
-        .btn {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid #555;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            color: white;
-            font-size: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            user-select: none;
+            display: none; /* Hidden on Desktop by default */
+            touch-action: none;
+            z-index: 10;
         }
-        .btn:active {
-            background: rgba(255,255,255,0.4);
+
+        #joystick-knob {
+            width: 50px;
+            height: 50px;
+            background: rgba(79, 195, 247, 0.8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+            pointer-events: none; /* Event tembus ke zone */
         }
+
+        /* Show joystick only on screens smaller than 768px */
         @media (max-width: 768px) {
-            #mobileControls {
-                display: flex;
+            #joystick-zone {
+                display: block;
             }
         }
     </style>
@@ -71,15 +74,8 @@
     <div id="ui">Score: <span id="score">0</span> | HP: <span id="hp">5</span></div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-    <div id="mobileControls">
-        <div class="btn-row">
-            <div class="btn" id="btnA">A</div>
-            <div class="btn" id="btnW">W</div>
-            <div class="btn" id="btnD">D</div>
-        </div>
-        <div class="btn-row">
-            <div class="btn" id="btnS">S</div>
-        </div>
+    <div id="joystick-zone">
+        <div id="joystick-knob"></div>
     </div>
 
     <script>
@@ -92,7 +88,7 @@
         function resizeCanvas() {
             const scale = Math.min(window.innerWidth / 800, window.innerHeight / 600, 1);
             canvas.style.transform = `scale(${scale})`;
-            canvas.style.transformOrigin = 'top left';
+            canvas.style.transformOrigin = 'center center';
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -100,14 +96,11 @@
         // Game state
         const state = {
             score: 0,
-            hp: 5,
+            hp: 10,
             gameOver: false,
-            keys: {
-                w: false,
-                a: false,
-                s: false,
-                d: false
-            }
+            keys: { w: false, a: false, s: false, d: false },
+            // Joystick state
+            joystick: { x: 0, y: 0, active: false }
         };
 
         // Player
@@ -126,6 +119,61 @@
         const ufos = [];
         const ufoBullets = [];
 
+        // --- JOYSTICK LOGIC ---
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const maxRadius = 35; // Batas gerak knob
+
+        joystickZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            state.joystick.active = true;
+            handleJoystick(e.touches[0]);
+        }, { passive: false });
+
+        joystickZone.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Mencegah scroll layar
+            if (state.joystick.active) {
+                handleJoystick(e.touches[0]);
+            }
+        }, { passive: false });
+
+        joystickZone.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            state.joystick.active = false;
+            state.joystick.x = 0;
+            state.joystick.y = 0;
+            // Reset knob position
+            joystickKnob.style.transform = `translate(-50%, -50%)`;
+        });
+
+        function handleJoystick(touch) {
+            const rect = joystickZone.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Hitung jarak dari tengah
+            const deltaX = touch.clientX - centerX;
+            const deltaY = touch.clientY - centerY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Hitung sudut
+            const angle = Math.atan2(deltaY, deltaX);
+
+            // Batasi gerakan knob agar tidak keluar lingkaran
+            const cappedDistance = Math.min(distance, maxRadius);
+            
+            // Pindahkan visual Knob
+            const knobX = Math.cos(angle) * cappedDistance;
+            const knobY = Math.sin(angle) * cappedDistance;
+            joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+            // Normalisasi output (-1 sampai 1) untuk pergerakan player
+            state.joystick.x = knobX / maxRadius;
+            state.joystick.y = knobY / maxRadius;
+        }
+        // --- END JOYSTICK LOGIC ---
+
+
         // Spawn UFO
         function spawnUFO() {
             const size = 30 + Math.random() * 20;
@@ -135,13 +183,13 @@
                 width: size,
                 height: size / 2,
                 speed: 1 + Math.random() * 2,
-                shootChance: 0.002 + state.score * 0.0001, // higher score → more shooting
+                shootChance: 0.002 + state.score * 0.0001,
                 lastShot: 0,
                 shootCooldown: 1500
             });
         }
 
-        // Input Handling
+        // Input Handling (Keyboard)
         window.addEventListener('keydown', (e) => {
             if (state.gameOver && e.key === ' ') restart();
             switch(e.key.toLowerCase()) {
@@ -161,15 +209,13 @@
             }
         });
 
-        // Mobile controls
-        document.getElementById('btnW').addEventListener('touchstart', () => state.keys.w = true);
-        document.getElementById('btnW').addEventListener('touchend', () => state.keys.w = false);
-        document.getElementById('btnA').addEventListener('touchstart', () => state.keys.a = true);
-        document.getElementById('btnA').addEventListener('touchend', () => state.keys.a = false);
-        document.getElementById('btnS').addEventListener('touchstart', () => state.keys.s = true);
-        document.getElementById('btnS').addEventListener('touchend', () => state.keys.s = false);
-        document.getElementById('btnD').addEventListener('touchstart', () => state.keys.d = true);
-        document.getElementById('btnD').addEventListener('touchend', () => state.keys.d = false);
+        // Input Handling (Tap to Restart on Mobile)
+        window.addEventListener('touchstart', (e) => {
+            // Jika game over, tap dimana saja untuk restart
+            if (state.gameOver) {
+                restart();
+            }
+        });
 
         // Shooting (player auto-shoot)
         function playerShoot() {
@@ -201,7 +247,7 @@
             }
         }
 
-        // Collision detection (simple AABB)
+        // Collision detection
         function collides(a, b) {
             return a.x < b.x + b.width &&
                    a.x + a.width > b.x &&
@@ -213,11 +259,30 @@
         function update() {
             if (state.gameOver) return;
 
-            // Move player
-            if (state.keys.w) player.y = Math.max(20, player.y - player.speed);
-            if (state.keys.s) player.y = Math.min(canvas.height - 30, player.y + player.speed);
-            if (state.keys.a) player.x = Math.max(20, player.x - player.speed);
-            if (state.keys.d) player.x = Math.min(canvas.width - 20, player.x + player.speed);
+            // --- MOVEMENT LOGIC (Keyboard + Joystick Mixed) ---
+            let moveX = 0;
+            let moveY = 0;
+
+            // Cek Keyboard
+            if (state.keys.a) moveX -= 1;
+            if (state.keys.d) moveX += 1;
+            if (state.keys.w) moveY -= 1;
+            if (state.keys.s) moveY += 1;
+
+            // Cek Joystick (Prioritas jika aktif)
+            if (state.joystick.active) {
+                moveX = state.joystick.x;
+                moveY = state.joystick.y;
+            }
+
+            // Terapkan gerakan
+            player.x += moveX * player.speed;
+            player.y += moveY * player.speed;
+
+            // Batasi agar tidak keluar layar
+            player.x = Math.max(20, Math.min(canvas.width - 20, player.x));
+            player.y = Math.max(20, Math.min(canvas.height - 30, player.y));
+            // --- END MOVEMENT ---
 
             // Auto-shoot
             playerShoot();
@@ -229,22 +294,19 @@
             }
 
             // Update UFOs
-            if (Math.random() < 0.02 + state.score * 0.0001) spawnUFO(); // more UFOs as score increases
+            if (Math.random() < 0.02 + state.score * 0.0001) spawnUFO();
 
             for (let i = ufos.length - 1; i >= 0; i--) {
                 const ufo = ufos[i];
                 ufo.y += ufo.speed;
 
-                // Remove if off-screen
                 if (ufo.y > canvas.height) {
                     ufos.splice(i, 1);
                     continue;
                 }
 
-                // UFO shoots
                 ufoShoot(ufo);
 
-                // Check bullet hits
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     if (collides(bullets[j], ufo)) {
                         bullets.splice(j, 1);
@@ -264,7 +326,6 @@
                     continue;
                 }
 
-                // Check if hits player
                 if (collides(ufoBullets[i], player)) {
                     ufoBullets.splice(i, 1);
                     state.hp--;
@@ -280,7 +341,7 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw stars (background)
+            // Draw stars
             ctx.fillStyle = '#fff';
             for (let i = 0; i < 100; i++) {
                 const x = (i * 137) % canvas.width;
@@ -290,7 +351,7 @@
             }
             ctx.globalAlpha = 1;
 
-            // Draw player (triangle)
+            // Draw player
             ctx.fillStyle = '#4fc3f7';
             ctx.beginPath();
             ctx.moveTo(player.x, player.y - 15);
@@ -311,7 +372,6 @@
                 ctx.beginPath();
                 ctx.arc(ufo.x + ufo.width/2, ufo.y + ufo.height/2, ufo.width/2, 0, Math.PI * 2);
                 ctx.fill();
-                // Saucer body
                 ctx.fillStyle = '#689f38';
                 ctx.fillRect(ufo.x, ufo.y + ufo.height/3, ufo.width, ufo.height/3);
             });
@@ -332,14 +392,20 @@
                 ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
                 ctx.font = '24px "Courier New", monospace';
                 ctx.fillText(`Score: ${state.score}`, canvas.width / 2, canvas.height / 2 + 20);
-                ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 60);
+                
+                // Pesan berbeda untuk Desktop vs Mobile
+                if (window.innerWidth < 768) {
+                    ctx.fillText('Tap screen to restart', canvas.width / 2, canvas.height / 2 + 60);
+                } else {
+                    ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 60);
+                }
                 ctx.textAlign = 'left';
             }
         }
 
         function restart() {
             state.score = 0;
-            state.hp = 5;
+            state.hp = 10;
             state.gameOver = false;
             bullets.length = 0;
             ufos.length = 0;
@@ -347,20 +413,16 @@
             player.x = canvas.width / 2;
             player.y = canvas.height - 60;
             scoreEl.textContent = '0';
-            hpEl.textContent = '5';
+            hpEl.textContent = '10';
         }
 
-        // Game loop
         function gameLoop() {
             update();
             render();
             requestAnimationFrame(gameLoop);
         }
 
-        // Start
         gameLoop();
-
-        // Spawn initial UFOs
         setInterval(spawnUFO, 2000);
     </script>
 </body>

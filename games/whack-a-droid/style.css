@@ -17,7 +17,7 @@ body {
 }
 
 h1 {
-    font-size: 3rem;
+    font-size: clamp(2rem, 8vw, 3.5rem);
     margin-bottom: 20px;
     color: #f1c40f;
     text-shadow: 2px 2px #e67e22;
@@ -27,33 +27,54 @@ h1 {
     display: flex;
     justify-content: space-around;
     margin-bottom: 20px;
+    gap: 10px;
 }
 
 .score-board,
 .timer {
-    font-size: 2rem;
+    font-size: clamp(1.2rem, 5vw, 2rem);
     font-weight: bold;
     background: rgba(0, 0, 0, 0.2);
     padding: 10px 20px;
     border-radius: 10px;
+    flex: 1;
+    max-width: 200px;
 }
 
 .grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    padding: 10px;
+    justify-items: center;
 }
 
 .hole {
-    width: 150px;
-    height: 150px;
+    width: 100%;
+    max-width: 150px;
+    aspect-ratio: 1 / 1;
     background: #34495e;
     border-radius: 50%;
     position: relative;
     overflow: hidden;
     border-bottom: 8px solid #203549;
     box-shadow: inset 0 10px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 500px) {
+    .grid {
+        gap: 8px;
+        /* Tighter gap for small screens */
+    }
+
+    .droid {
+        width: 55px;
+        height: 70px;
+    }
+
+    .droid::after {
+        left: 22px;
+    }
 }
 
 .droid {
@@ -83,6 +104,14 @@ h1 {
     /* Two eyes */
 }
 
+@media (max-width: 500px) {
+    .droid::before {
+        width: 10px;
+        height: 10px;
+        box-shadow: 20px 0 0 #fff;
+    }
+}
+
 .droid::after {
     content: '';
     position: absolute;
@@ -104,7 +133,7 @@ button {
     color: white;
     border: none;
     padding: 15px 40px;
-    font-size: 1.5rem;
+    font-size: clamp(1rem, 4vw, 1.5rem);
     border-radius: 5px;
     cursor: pointer;
     margin-top: 30px;

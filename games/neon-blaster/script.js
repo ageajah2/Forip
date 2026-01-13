@@ -126,11 +126,30 @@ window.addEventListener('keyup', e => {
     }
 });
 
-canvas.addEventListener('mousemove', e => {
+function updateMousePos(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    mouse.x = (clientX - rect.left) * scaleX;
+    mouse.y = (clientY - rect.top) * scaleY;
+}
+
+canvas.addEventListener('mousemove', e => {
+    updateMousePos(e.clientX, e.clientY);
 });
+
+// Touch aiming
+canvas.addEventListener('touchstart', e => {
+    if (e.touches.length > 0) {
+        updateMousePos(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    if (e.touches.length > 0) {
+        updateMousePos(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: false });
 
 // Mouse Down/Up tracking
 canvas.addEventListener('mousedown', () => {
@@ -141,6 +160,38 @@ canvas.addEventListener('mouseup', () => {
     mouse.down = false;
 });
 
+// Mobile Button Controls
+const btnLeft = document.getElementById('btn-left');
+const btnRight = document.getElementById('btn-right');
+const btnJump = document.getElementById('btn-jump');
+const btnShoot = document.getElementById('btn-shoot');
+
+if (btnLeft) {
+    const setupBtn = (btn, key) => {
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            keys[key] = true;
+        });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            keys[key] = false;
+        });
+    };
+
+    setupBtn(btnLeft, 'a');
+    setupBtn(btnRight, 'd');
+    setupBtn(btnJump, 'w');
+
+    btnShoot.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        mouse.down = true;
+    });
+    btnShoot.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        mouse.down = false;
+    });
+}
+
 // Cooldown
 let fireDelay = 0;
 const FIRE_RATE = 10; // Frames between shots
@@ -148,8 +199,17 @@ const FIRE_RATE = 10; // Frames between shots
 function shoot() {
     if (fireDelay > 0) return;
 
+    // If mouse/touch coordinates are at 0,0 (initial state), shoot in facing direction
+    let targetX = mouse.x;
+    let targetY = mouse.y;
+
+    if (mouse.x === 0 && mouse.y === 0) {
+        targetX = player.x + (player.facingLeft ? -100 : 200);
+        targetY = player.y + player.h / 2;
+    }
+
     // Shoot
-    let angle = Math.atan2(mouse.y - (player.y + player.h / 2), mouse.x - (player.x + player.w / 2));
+    let angle = Math.atan2(targetY - (player.y + player.h / 2), targetX - (player.x + player.w / 2));
     bullets.push({
         x: player.x + player.w / 2,
         y: player.y + player.h / 2,
@@ -299,7 +359,13 @@ function draw() {
     ctx.save();
     ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
     // Rotating Gun
-    let angle = Math.atan2(mouse.y - (player.y + player.h / 2), mouse.x - (player.x + player.w / 2));
+    let targetX = mouse.x;
+    let targetY = mouse.y;
+    if (mouse.x === 0 && mouse.y === 0) {
+        targetX = player.x + (player.facingLeft ? -100 : 100);
+        targetY = player.y + player.h / 2;
+    }
+    let angle = Math.atan2(targetY - (player.y + player.h / 2), targetX - (player.x + player.w / 2));
 
     // Draw Body
     ctx.fillStyle = player.color;
@@ -341,15 +407,17 @@ function draw() {
     });
 
     // Crosshair
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(mouse.x - 15, mouse.y); ctx.lineTo(mouse.x + 15, mouse.y);
-    ctx.moveTo(mouse.x, mouse.y - 15); ctx.lineTo(mouse.x, mouse.y + 15);
-    ctx.stroke();
+    if (mouse.x !== 0 || mouse.y !== 0) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(mouse.x - 15, mouse.y); ctx.lineTo(mouse.x + 15, mouse.y);
+        ctx.moveTo(mouse.x, mouse.y - 15); ctx.lineTo(mouse.x, mouse.y + 15);
+        ctx.stroke();
+    }
 }
 
 function gameOver() {

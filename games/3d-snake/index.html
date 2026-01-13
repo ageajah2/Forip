@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voxel Snake ERTEEX</title>
+    <title>Voxel Snake 3D - Mirror Floor</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; }
-        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
         #ui-container {
             position: absolute;
             top: 10px;
@@ -18,22 +24,97 @@
             padding: 15px;
             border-radius: 8px;
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
-        h1 { margin: 0 0 10px 0; font-size: 24px; text-shadow: 2px 2px 0 #000; color: #4caf50;}
-        p { margin: 5px 0; font-size: 14px; opacity: 0.9; }
-        
-        .highlight { color: #ffd700; font-weight: bold; }
-        .key-hint { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;}
-        
-        .control-group { margin-top: 15px; border-top: 1px solid #555; padding-top: 10px; }
-        label { font-size: 14px; margin-right: 10px; }
-        input[type="color"] { cursor: pointer; border: none; width: 40px; height: 25px; vertical-align: middle; border-radius: 4px;}
 
-        #score-board { margin-top: 10px; font-size: 24px; font-weight: bold; color: #fff; }
-        #camera-status, #mirror-status { font-size: 12px; color: #aaa; margin-top: 5px; }
-        
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            text-shadow: 2px 2px 0 #000;
+            color: #4caf50;
+        }
+
+        p {
+            margin: 5px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .highlight {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .key-hint {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .control-group {
+            margin-top: 15px;
+            border-top: 1px solid #555;
+            padding-top: 10px;
+        }
+
+        label {
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        input[type="color"] {
+            cursor: pointer;
+            border: none;
+            width: 40px;
+            height: 25px;
+            vertical-align: middle;
+            border-radius: 4px;
+        }
+
+        #score-board {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        #camera-status,
+        #mirror-status {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        /* UI Sizer */
+        .ui-sizer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+            z-index: 100;
+        }
+
+        .size-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .size-btn:hover {
+            background: rgba(76, 175, 80, 0.4);
+        }
+
         #game-over {
             position: absolute;
             top: 50%;
@@ -49,6 +130,7 @@
             box-shadow: 0 0 50px rgba(76, 175, 80, 0.3);
             border: 2px solid #4caf50;
         }
+
         button {
             background: #4caf50;
             border: none;
@@ -61,52 +143,13 @@
             transition: all 0.2s;
             font-weight: bold;
         }
-        button:hover { background: #45a049; transform: scale(1.05); }
-		
-#virtual-controls {
-    position: fixed;
-    bottom: 50px;
-    left: 50px;              /* pindah ke kiri */
-    z-index: 30;
-    user-select: none;
-}
 
-
-#virtual-controls .row {
-    display: flex;
-    justify-content: center;
-    margin: 6px 0;
-}
-
-#virtual-controls button {
-    background: rgba(0, 0, 0, 0.65);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    width: 56px;
-    height: 56px;
-    margin: 4px;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-}
-
-#virtual-controls button:active {
-    background: #4caf50;
-    transform: scale(0.95);
-}
-
-#virtual-controls button.wide {
-    width: 120px;
-}
-
-#virtual-controls button.mirror {
-    background: rgba(76, 175, 80, 0.6);
-}
-
+        button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
     </style>
-    
+
     <script type="importmap">
         {
             "imports": {
@@ -116,19 +159,25 @@
         }
     </script>
 </head>
+
 <body>
+
+    <div class="ui-sizer">
+        <button class="size-btn" id="ui-plus">+</button>
+        <button class="size-btn" id="ui-minus">-</button>
+    </div>
 
     <div id="ui-container">
         <h1>Voxel Snake 3D</h1>
         <p>Ganti Kamera: <span class="key-hint">SPASI</span></p>
-        <p>Mode Cermin: <span class="key-hint">M</span></p> 
-        
+        <p>Mode Cermin: <span class="key-hint">M</span></p>
+
         <div class="control-group">
             <p id="controls-hint">Kontrol: <b>WASD (Arah Mata Angin)</b></p>
             <p id="camera-status">Kamera: Orbit (Bebas)</p>
             <p id="mirror-status">Lantai: Standar</p>
         </div>
-        
+
         <div class="control-group">
             <label for="colorPicker">Warna Ular:</label>
             <input type="color" id="colorPicker" value="#4caf50">
@@ -142,33 +191,33 @@
         <p id="final-score" style="font-size: 20px;">Score: 0</p>
         <button onclick="resetGame()">Main Lagi</button>
     </div>
-	
-	<div id="virtual-controls">
-    <div class="row">
-        <button data-key="w">W</button>
-    </div>
-    <div class="row">
-        <button data-key="a">A</button>
-        <button data-key="s">S</button>
-        <button data-key="d">D</button>
-    </div>
-    <div class="row">
-        <button class="wide" data-key=" ">SPASI</button>
-        <button class="wide mirror" data-key="m">M</button>
-    </div>
-</div>
-
 
     <script type="module">
+        // --- UI SIZING LOGIC ---
+        let uiScale = 1.0;
+        const uiContainer = document.getElementById('ui-container');
+
+        document.getElementById('ui-plus').addEventListener('click', () => {
+            uiScale = Math.min(uiScale + 0.1, 2.0);
+            updateUIScale();
+        });
+
+        document.getElementById('ui-minus').addEventListener('click', () => {
+            uiScale = Math.max(uiScale - 0.1, 0.5);
+            updateUIScale();
+        });
+
+        function updateUIScale() {
+            uiContainer.style.transform = `scale(${uiScale})`;
+            uiContainer.style.transformOrigin = 'top left';
+        }
+
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         // --- IMPORT BARU UNTUK REFLEKSI ---
         import { Reflector } from 'three/addons/objects/Reflector.js';
 
         // --- KONFIGURASI ---
-		const SKY_BLUE = new THREE.Color(0x87ceeb); // biru langit
-		const DARK_BG  = new THREE.Color(0x111111);
-
         const BOARD_SIZE = 17;
         const CUBE_SIZE = 1;
         const SPEED = 110;
@@ -181,13 +230,13 @@
         let snakeColor = new THREE.Color('#4caf50');
         let foods = [];
         let foodMeshes = [];
-        
+
         let direction = { x: 1, z: 0 };
         let nextDirection = { x: 1, z: 0 };
         let lastMoveTime = 0;
         let score = 0;
         let isGameOver = false;
-        
+
         // --- VARIABEL KAMERA & VISUAL ---
         let isFollowCam = false;
         let smoothedHeadPos = new THREE.Vector3(0, 0, 0);
@@ -195,40 +244,19 @@
         // --- VARIABEL LANTAI BARU ---
         let defaultFloor, mirrorFloor, gridHelper;
         let isReflective = false; // Status mode cermin
-        
+
         const snakeGroup = new THREE.Group();
         const foodGroup = new THREE.Group();
-		
-		function simulateKey(key) {
-    const event = new KeyboardEvent('keydown', {
-        key: key
-    });
-    window.dispatchEvent(event);
-}
-
-// Pasang event ke tombol virtual
-document.querySelectorAll('#virtual-controls button').forEach(btn => {
-    btn.addEventListener('touchstart', e => {
-        e.preventDefault();
-        simulateKey(btn.dataset.key);
-    });
-
-    btn.addEventListener('mousedown', e => {
-        e.preventDefault();
-        simulateKey(btn.dataset.key);
-    });
-});
-
 
         // --- INIT ---
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x111111);
             // Fog dikurangi sedikit agar refleksi lebih jelas di kejauhan
-            scene.fog = new THREE.Fog(0x111111, 20, 60); 
+            scene.fog = new THREE.Fog(0x111111, 20, 60);
 
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-            setCameraOrbit(); 
+            setCameraOrbit();
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -244,7 +272,7 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
             // Pencahayaan ditingkatkan untuk refleksi
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
             scene.add(ambientLight);
-            
+
             const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
             dirLight.position.set(15, 30, 10);
             dirLight.castShadow = true;
@@ -257,7 +285,7 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
             const planeGeo = new THREE.PlaneGeometry(BOARD_SIZE + 10, BOARD_SIZE + 10);
 
             // 1. Lantai Standar (Matte)
-            const planeMat = new THREE.MeshStandardMaterial({ 
+            const planeMat = new THREE.MeshStandardMaterial({
                 color: 0x222222,
                 roughness: 0.8,
                 metalness: 0.2
@@ -289,7 +317,7 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
 
             window.addEventListener('resize', onWindowResize);
             window.addEventListener('keydown', onKeyDown);
-            
+
             document.getElementById('colorPicker').addEventListener('input', (e) => {
                 snakeColor.set(e.target.value);
                 updateSnakeColor();
@@ -300,37 +328,26 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
         }
 
         // --- LOGIKA GANTI LANTAI (MIRROR TOGGLE) ---
-				function toggleMirrorMode() {
-			isReflective = !isReflective;
-			const statusText = document.getElementById('mirror-status');
+        function toggleMirrorMode() {
+            isReflective = !isReflective;
+            const statusText = document.getElementById('mirror-status');
 
-			if (isReflective) {
-				// MODE CERMIN ON
-				scene.remove(defaultFloor);
-				scene.add(mirrorFloor);
-				gridHelper.visible = false;
-
-				// 🌤️ Langit biru
-				scene.background = SKY_BLUE;
-				scene.fog = new THREE.Fog(0x87ceeb, 30, 80);
-
-				statusText.innerText = "Lantai: Cermin (Reflektif)";
-				statusText.style.color = "#4caf50";
-			} else {
-				// MODE CERMIN OFF
-				scene.remove(mirrorFloor);
-				scene.add(defaultFloor);
-				gridHelper.visible = true;
-
-				// 🌑 Kembali ke gelap
-				scene.background = DARK_BG;
-				scene.fog = new THREE.Fog(0x111111, 20, 60);
-
-				statusText.innerText = "Lantai: Standar";
-				statusText.style.color = "#aaa";
-			}
-		}
-
+            if (isReflective) {
+                // Mode Cermin ON
+                scene.remove(defaultFloor);
+                scene.add(mirrorFloor);
+                gridHelper.visible = false; // Sembunyikan grid agar pantulan bersih
+                statusText.innerText = "Lantai: Cermin (Reflektif)";
+                statusText.style.color = "#4caf50";
+            } else {
+                // Mode Cermin OFF (Standar)
+                scene.remove(mirrorFloor);
+                scene.add(defaultFloor);
+                gridHelper.visible = true; // Tampilkan grid kembali
+                statusText.innerText = "Lantai: Standar";
+                statusText.style.color = "#aaa";
+            }
+        }
 
         // --- LOGIKA KAMERA & KONTROL ---
         function toggleCameraMode() {
@@ -339,13 +356,13 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
             const hintText = document.getElementById('controls-hint');
 
             if (isFollowCam) {
-                controls.enabled = false; 
+                controls.enabled = false;
                 statusText.innerText = "Kamera: Mengikuti Ular (Follow)";
                 hintText.innerHTML = "Kontrol: <b>A (Kiri) / D (Kanan)</b> relatif ular";
-                if(snake.length > 0) smoothedHeadPos.set(snake[0].x, 0, snake[0].z);
+                if (snake.length > 0) smoothedHeadPos.set(snake[0].x, 0, snake[0].z);
             } else {
-                controls.enabled = true; 
-                setCameraOrbit(); 
+                controls.enabled = true;
+                setCameraOrbit();
                 statusText.innerText = "Kamera: Orbit (Bebas)";
                 hintText.innerHTML = "Kontrol: <b>WASD (Arah Mata Angin)</b>";
             }
@@ -361,17 +378,17 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
             const head = snake[0];
 
             const targetHeadVec = new THREE.Vector3(head.x, 0, head.z);
-            smoothedHeadPos.lerp(targetHeadVec, 0.12); 
+            smoothedHeadPos.lerp(targetHeadVec, 0.12);
 
-            const distH = 10; 
-            const distV = 9;  
-            
+            const distH = 10;
+            const distV = 9;
+
             const desiredCamX = smoothedHeadPos.x - (direction.x * distH);
             const desiredCamZ = smoothedHeadPos.z - (direction.z * distH);
             const idealCameraPos = new THREE.Vector3(desiredCamX, distV, desiredCamZ);
 
             camera.position.lerp(idealCameraPos, 0.06);
-            camera.lookAt(smoothedHeadPos); 
+            camera.lookAt(smoothedHeadPos);
         }
 
         function onKeyDown(event) {
@@ -393,7 +410,7 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
                 else if (event.key === 'd' || event.key === 'D' || event.key === 'ArrowRight') {
                     nextDirection = { x: -direction.z, z: direction.x };
                 }
-                return; 
+                return;
             }
 
             switch (event.key) {
@@ -429,11 +446,11 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
             smoothedHeadPos.set(0, 0, 0);
 
             snake.forEach(pos => addSnakeSegment(pos.x, pos.z));
-            for(let i = 0; i < FOOD_COUNT; i++) spawnFood();
-            
-            if(isFollowCam) {
+            for (let i = 0; i < FOOD_COUNT; i++) spawnFood();
+
+            if (isFollowCam) {
                 camera.position.set(-10, 10, 0);
-                camera.lookAt(0,0,0);
+                camera.lookAt(0, 0, 0);
             }
         }
 
@@ -449,8 +466,8 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
             foods.push({ x, z });
             // Makanan dibuat sedikit lebih glossy agar pantulannya bagus
             const geometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-            const hue = Math.random(); 
-            const material = new THREE.MeshStandardMaterial({ 
+            const hue = Math.random();
+            const material = new THREE.MeshStandardMaterial({
                 color: new THREE.Color().setHSL(hue, 0.8, 0.5),
                 emissive: new THREE.Color().setHSL(hue, 0.8, 0.2),
                 roughness: 0.1,
@@ -466,8 +483,8 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
         function addSnakeSegment(x, z) {
             const geometry = new THREE.BoxGeometry(CUBE_SIZE * 0.95, CUBE_SIZE * 0.95, CUBE_SIZE * 0.95);
             // Material ular dibuat sedikit lebih reflektif juga
-            const material = new THREE.MeshStandardMaterial({ 
-                color: snakeColor, 
+            const material = new THREE.MeshStandardMaterial({
+                color: snakeColor,
                 roughness: 0.4,
                 metalness: 0.1
             });
@@ -525,7 +542,7 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
                 foods.splice(eatenIndex, 1);
                 foodMeshes.splice(eatenIndex, 1);
                 addSnakeSegment(newHead.x, newHead.z);
-                spawnFood(); 
+                spawnFood();
             } else {
                 snake.pop();
             }
@@ -574,4 +591,5 @@ document.querySelectorAll('#virtual-controls button').forEach(btn => {
         init();
     </script>
 </body>
+
 </html>

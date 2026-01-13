@@ -172,6 +172,49 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
+// Touch Controls
+function handleTouch(e) {
+    if (e.type === 'touchstart' || e.type === 'touchmove') {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+
+        if (!gameRunning && !gameOverEl.classList.contains('hidden')) {
+            startGame();
+            return;
+        }
+
+        if (gameRunning) {
+            // Move ship towards touch position
+            if (touchX < ship.x - 10) {
+                ship.dx = -ship.speed;
+            } else if (touchX > ship.x + 10) {
+                ship.dx = ship.speed;
+            } else {
+                ship.dx = 0;
+            }
+        }
+    } else if (e.type === 'touchend') {
+        ship.dx = 0;
+    }
+}
+
+canvas.addEventListener('touchstart', (e) => {
+    handleTouch(e);
+    if (gameRunning) e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    handleTouch(e);
+    if (gameRunning) e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+    handleTouch(e);
+    if (gameRunning) e.preventDefault();
+}, { passive: false });
+
+
 startBtn.addEventListener('click', startGame);
 
 // Initial draw
