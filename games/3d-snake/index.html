@@ -134,45 +134,88 @@
         /* Mobile Controls */
         #mobile-controls {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: none;
+            bottom: 30px;
+            left: 30px;
+            display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             z-index: 100;
         }
 
         .dpad-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .control-btn {
             width: 60px;
             height: 60px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            font-size: 24px;
+            background: rgba(255, 255, 255, 0.05);
+            /* Lighter glass effect */
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            /* Rounded squares look more modern */
+            font-size: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             user-select: none;
             touch-action: manipulation;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
         }
 
         .control-btn:active {
-            background: rgba(76, 175, 80, 0.8);
-            transform: scale(0.9);
+            background: rgba(76, 175, 80, 0.5);
+            border-color: #4caf50;
+            transform: scale(0.92);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.05s ease;
         }
 
-        @media (max-width: 768px) {
-            #mobile-controls {
-                display: flex;
-            }
+        /* UI Container Theme */
+        #ui-container.light-theme {
+            background: rgba(255, 255, 255, 0.85);
+            color: #111;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #ui-container.light-theme h1 {
+            color: #2e7d32;
+        }
+
+        #ui-container.light-theme .key-hint {
+            background: rgba(0, 0, 0, 0.05);
+            color: #111;
+        }
+
+        #ui-container.light-theme #camera-status,
+        #ui-container.light-theme #mirror-status {
+            color: #555;
+        }
+
+        /* Mobile Controls Theme */
+        #mobile-controls.light-theme .control-btn {
+            background: rgba(255, 255, 255, 0.4);
+            color: #111;
+            border-color: rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        #mobile-controls.light-theme .control-btn:hover {
+            background: rgba(255, 255, 255, 0.6);
         }
     </style>
 
@@ -194,7 +237,11 @@
     </div>
 
     <div id="mobile-controls">
-        <div class="control-btn" id="btn-up">▲</div>
+        <div class="dpad-row">
+            <div class="control-btn" id="btn-cam" title="Ganti Kamera">📽️</div>
+            <div class="control-btn" id="btn-up">▲</div>
+            <div class="control-btn" id="btn-mir" title="Mode Cermin">🪞</div>
+        </div>
         <div class="dpad-row">
             <div class="control-btn" id="btn-left">◀</div>
             <div class="control-btn" id="btn-down">▼</div>
@@ -274,6 +321,10 @@
         document.getElementById('btn-down').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('down'); });
         document.getElementById('btn-left').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('left'); });
         document.getElementById('btn-right').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('right'); });
+
+        // New utility buttons
+        document.getElementById('btn-cam').addEventListener('pointerdown', (e) => { e.preventDefault(); toggleCameraMode(); });
+        document.getElementById('btn-mir').addEventListener('pointerdown', (e) => { e.preventDefault(); toggleMirrorMode(); });
 
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -396,19 +447,36 @@
             const statusText = document.getElementById('mirror-status');
 
             if (isReflective) {
-                // Mode Cermin ON
+                // Mode Cermin ON (Tema Terang)
                 scene.remove(defaultFloor);
                 scene.add(mirrorFloor);
-                gridHelper.visible = false; // Sembunyikan grid agar pantulan bersih
+                gridHelper.visible = false;
                 statusText.innerText = "Lantai: Cermin (Reflektif)";
-                statusText.style.color = "#4caf50";
+                statusText.style.color = "#2e7d32";
+
+                // Perubahan Visual Scene
+                scene.background.set(0x87ceeb); // Sky Blue
+                scene.fog.color.set(0x87ceeb);
+                mirrorFloor.material.color.set(0xffffff); // Pantulan bersih
+
+                // Perubahan UI
+                uiContainer.classList.add('light-theme');
+                mobileControls.classList.add('light-theme');
             } else {
-                // Mode Cermin OFF (Standar)
+                // Mode Cermin OFF (Tema Gelap)
                 scene.remove(mirrorFloor);
                 scene.add(defaultFloor);
-                gridHelper.visible = true; // Tampilkan grid kembali
+                gridHelper.visible = true;
                 statusText.innerText = "Lantai: Standar";
                 statusText.style.color = "#aaa";
+
+                // Perubahan Visual Scene
+                scene.background.set(0x111111);
+                scene.fog.color.set(0x111111);
+
+                // Perubahan UI
+                uiContainer.classList.remove('light-theme');
+                mobileControls.classList.remove('light-theme');
             }
         }
 
