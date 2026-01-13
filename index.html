@@ -41,6 +41,11 @@
       font-size: 20px
     }
 
+    header img {
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
     .controls {
       margin-left: auto;
       display: flex;
@@ -127,10 +132,9 @@
 
     /* Use aspect-ratio for nice responsiveness. Width limited by vw, height limited by vh */
     .preview {
-      width: min(1200px, 94vw);
-      aspect-ratio: 20 / 9;
-      /* default aspect ratio, scales responsively */
-      max-height: 94vh;
+      width: min(1200px, 96vw);
+      height: 90vh;
+      max-height: 90vh;
       background: #000;
       border-radius: 12px;
       overflow: hidden;
@@ -140,12 +144,13 @@
       position: relative;
     }
 
-    /* If the viewport is tall (mobile portrait), prefer height: */
-    @media (max-aspect-ratio: 16/9) {
+    /* Remove specific mobile aspect ratios to allow the content to dictate fit */
+    @media (max-width: 768px) {
       .preview {
-        width: 96vw;
-        height: 80vh;
-        aspect-ratio: initial;
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
       }
     }
 
@@ -212,9 +217,7 @@
 <body>
   <div class="wrap">
     <header>
-      <img
-        src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='%2348bfe3'/></svg>"
-        alt="logo" width="40" height="40">
+      <img src="fufufafa.png" alt="logo" width="40" height="40">
       <h1>FUFUFARIP - Mini Games</h1>
       <div class="controls">
         <input id="search" type="search" placeholder="Cari game...">
