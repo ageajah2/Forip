@@ -172,6 +172,47 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
+// Gyroscope Control
+let gyroActive = false;
+async function initGyro() {
+    if (gyroActive) return;
+
+    // Request permission for iOS 13+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                setupGyroListener();
+            }
+        } catch (error) {
+            console.error('Gyro permission denied:', error);
+        }
+    } else {
+        // Non-iOS or older devices
+        setupGyroListener();
+    }
+}
+
+function setupGyroListener() {
+    window.addEventListener('deviceorientation', (e) => {
+        if (!gameRunning) return;
+
+        // gamma is the left-to-right tilt in degrees [-90, 90]
+        const tilt = e.gamma;
+        if (tilt !== null) {
+            // Deadzone and sensitivity
+            if (Math.abs(tilt) > 5) {
+                // Map tilt to speed (max tilt 30 degrees for full speed)
+                const targetDx = (tilt / 30) * ship.speed;
+                ship.dx = Math.max(-ship.speed, Math.min(ship.speed, targetDx));
+            } else {
+                ship.dx = 0;
+            }
+        }
+    });
+    gyroActive = true;
+}
+
 // Touch Controls
 function handleTouch(e) {
     if (e.type === 'touchstart' || e.type === 'touchmove') {
@@ -180,12 +221,12 @@ function handleTouch(e) {
         const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
 
         if (!gameRunning && !gameOverEl.classList.contains('hidden')) {
+            initGyro();
             startGame();
             return;
         }
 
         if (gameRunning) {
-            // Move ship towards touch position
             if (touchX < ship.x - 10) {
                 ship.dx = -ship.speed;
             } else if (touchX > ship.x + 10) {
@@ -195,7 +236,7 @@ function handleTouch(e) {
             }
         }
     } else if (e.type === 'touchend') {
-        ship.dx = 0;
+        if (!gyroActive) ship.dx = 0;
     }
 }
 
@@ -214,8 +255,10 @@ canvas.addEventListener('touchend', (e) => {
     if (gameRunning) e.preventDefault();
 }, { passive: false });
 
-
-startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('click', () => {
+    initGyro();
+    startGame();
+});
 
 // Initial draw
 drawStars();
