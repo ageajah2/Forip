@@ -131,22 +131,48 @@
             border: 2px solid #4caf50;
         }
 
-        button {
-            background: #4caf50;
-            border: none;
-            color: white;
-            padding: 12px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 20px;
-            transition: all 0.2s;
-            font-weight: bold;
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
         }
 
-        button:hover {
-            background: #45a049;
-            transform: scale(1.05);
+        .dpad-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            background: rgba(76, 175, 80, 0.8);
+            transform: scale(0.9);
+        }
+
+        @media (max-width: 768px) {
+            #mobile-controls {
+                display: flex;
+            }
         }
     </style>
 
@@ -165,6 +191,15 @@
     <div class="ui-sizer">
         <button class="size-btn" id="ui-plus">+</button>
         <button class="size-btn" id="ui-minus">-</button>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="control-btn" id="btn-up">▲</div>
+        <div class="dpad-row">
+            <div class="control-btn" id="btn-left">◀</div>
+            <div class="control-btn" id="btn-down">▼</div>
+            <div class="control-btn" id="btn-right">▶</div>
+        </div>
     </div>
 
     <div id="ui-container">
@@ -196,6 +231,7 @@
         // --- UI SIZING LOGIC ---
         let uiScale = 1.0;
         const uiContainer = document.getElementById('ui-container');
+        const mobileControls = document.getElementById('mobile-controls');
 
         document.getElementById('ui-plus').addEventListener('click', () => {
             uiScale = Math.min(uiScale + 0.1, 2.0);
@@ -210,7 +246,34 @@
         function updateUIScale() {
             uiContainer.style.transform = `scale(${uiScale})`;
             uiContainer.style.transformOrigin = 'top left';
+
+            mobileControls.style.transform = `scale(${uiScale})`;
+            mobileControls.style.transformOrigin = 'bottom left';
         }
+
+        // --- MOBILE CONTROL HANDLERS ---
+        function handleMove(dirName) {
+            if (isFollowCam) {
+                if (dirName === 'left') {
+                    nextDirection = { x: direction.z, z: -direction.x };
+                } else if (dirName === 'right') {
+                    nextDirection = { x: -direction.z, z: direction.x };
+                }
+                return;
+            }
+
+            switch (dirName) {
+                case 'up': if (direction.z !== 1) nextDirection = { x: 0, z: -1 }; break;
+                case 'down': if (direction.z !== -1) nextDirection = { x: 0, z: 1 }; break;
+                case 'left': if (direction.x !== 1) nextDirection = { x: -1, z: 0 }; break;
+                case 'right': if (direction.x !== -1) nextDirection = { x: 1, z: 0 }; break;
+            }
+        }
+
+        document.getElementById('btn-up').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('up'); });
+        document.getElementById('btn-down').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('down'); });
+        document.getElementById('btn-left').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('left'); });
+        document.getElementById('btn-right').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('right'); });
 
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
