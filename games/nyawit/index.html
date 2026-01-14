@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nyawit</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #dfffd8;
+    }
+
+    h1 {
+      color: green;
+    }
+
+    #gameArea {
+      width: 300px;
+      height: 300px;
+      background: #8b5a2b;
+      margin: 20px auto;
+      position: relative;
+      cursor: pointer;
+      border: 4px solid #4CAF50;
+      transition: transform 0.1s linear;
+    }
+
+    .palm {
+      position: absolute;
+      font-size: 32px;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    #info {
+      font-size: 20px;
+      margin: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🌴 Menanam Sawit 🌴</h1>
+
+  <div id="info">
+    Skor: <span id="score">0</span> |
+    Waktu: <span id="time">30</span> detik
+  </div>
+
+  <div id="gameArea"></div>
+
+  <button onclick="startGame()">Mulai Game</button>
+
+  <script>
+    let score = 0;
+    let timeLeft = 30;
+    let timer = null;
+    let gameActive = false;
+    let gyroActive = false;
+
+    const palmSize = 32;
+
+    const gameArea = document.getElementById("gameArea");
+    const scoreText = document.getElementById("score");
+    const timeText = document.getElementById("time");
+
+    /* ================= GAME ================= */
+
+    function startGame() {
+      clearInterval(timer);
+      score = 0;
+      timeLeft = 30;
+      gameActive = true;
+
+      scoreText.innerText = score;
+      timeText.innerText = timeLeft;
+      gameArea.innerHTML = "";
+
+      enableGyro();
+
+      timer = setInterval(() => {
+        timeLeft--;
+        timeText.innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      gameActive = false;
+      gameArea.style.transform = "translate(0,0)";
+      window.removeEventListener("deviceorientation", handleGyro);
+      alert("🌴 Game Over!\nSkor kamu: " + score);
+    }
+
+    /* ================= PALM ================= */
+
+    function isOverlapping(x, y) {
+      const palms = document.querySelectorAll(".palm");
+
+      for (let palm of palms) {
+        const px = palm.offsetLeft;
+        const py = palm.offsetTop;
+
+        const distance = Math.hypot(px - x, py - y);
+        if (distance < palmSize) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    gameArea.addEventListener("click", function (event) {
+      if (!gameActive) return;
+
+      const x = event.offsetX - palmSize / 2;
+      const y = event.offsetY - palmSize / 2;
+
+      if (isOverlapping(x, y)) {
+        penalti();
+        return;
+      }
+
+      const palm = document.createElement("div");
+      palm.className = "palm";
+      palm.innerHTML = "🌴";
+      palm.style.left = x + "px";
+      palm.style.top = y + "px";
+
+      gameArea.appendChild(palm);
+
+      score++;
+      scoreText.innerText = score;
+    });
+
+    /* ================= PENALTI ================= */
+
+    function penalti() {
+      // getar
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+      }
+
+      // kurangi skor (opsional)
+      score = Math.max(0, score - 0);
+      scoreText.innerText = score;
+
+      // efek goyang kecil
+      gameArea.style.transform = "translate(-5px, 5px)";
+      setTimeout(() => {
+        gameArea.style.transform = "translate(5px, -5px)";
+      }, 50);
+      setTimeout(() => {
+        gameArea.style.transform = "translate(0,0)";
+      }, 100);
+    }
+
+    /* ================= GYRO ================= */
+
+    function enableGyro() {
+      if (!window.DeviceOrientationEvent) return;
+
+      if (typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === "granted") {
+              window.addEventListener("deviceorientation", handleGyro);
+              gyroActive = true;
+            }
+          })
+          .catch(console.error);
+      } else {
+        window.addEventListener("deviceorientation", handleGyro);
+        gyroActive = true;
+      }
+    }
+
+    function handleGyro(event) {
+      if (!gameActive) return;
+
+      let x = event.gamma;
+      let y = event.beta;
+
+      x = Math.max(-10, Math.min(10, x));
+      y = Math.max(-10, Math.min(10, y));
+
+      gameArea.style.transform = `translate(${x}px, ${y}px)`;
+    }
+  </script>
+</body>
+</html>
