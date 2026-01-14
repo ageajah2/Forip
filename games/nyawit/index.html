@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Nyawit</title>
+  <title>Game Menanam Sawit</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -22,6 +22,7 @@
       cursor: pointer;
       border: 4px solid #4CAF50;
       transition: transform 0.1s linear;
+      transform-style: preserve-3d;
     }
 
     .palm {
@@ -45,7 +46,7 @@
 </head>
 
 <body>
-  <h1>🌴 Menanam Sawit 🌴</h1>
+  <h1>🌴 Game Menanam Sawit 🌴</h1>
 
   <div id="info">
     Skor: <span id="score">0</span> |
@@ -61,7 +62,6 @@
     let timeLeft = 30;
     let timer = null;
     let gameActive = false;
-    let gyroActive = false;
 
     const palmSize = 32;
 
@@ -69,7 +69,7 @@
     const scoreText = document.getElementById("score");
     const timeText = document.getElementById("time");
 
-    /* ================= GAME ================= */
+    /* ============ GAME ============ */
 
     function startGame() {
       clearInterval(timer);
@@ -96,12 +96,12 @@
     function endGame() {
       clearInterval(timer);
       gameActive = false;
-      gameArea.style.transform = "translate(0,0)";
+      gameArea.style.transform = "translate(0,0) rotateX(0deg)";
       window.removeEventListener("deviceorientation", handleGyro);
       alert("🌴 Game Over!\nSkor kamu: " + score);
     }
 
-    /* ================= PALM ================= */
+    /* ============ POHON ============ */
 
     function isOverlapping(x, y) {
       const palms = document.querySelectorAll(".palm");
@@ -111,9 +111,7 @@
         const py = palm.offsetTop;
 
         const distance = Math.hypot(px - x, py - y);
-        if (distance < palmSize) {
-          return true;
-        }
+        if (distance < palmSize) return true;
       }
       return false;
     }
@@ -141,58 +139,58 @@
       scoreText.innerText = score;
     });
 
-    /* ================= PENALTI ================= */
+    /* ============ PENALTI ============ */
 
     function penalti() {
-      // getar
       if (navigator.vibrate) {
         navigator.vibrate([100, 50, 100]);
       }
 
-      // kurangi skor (opsional)
       score = Math.max(0, score - 0);
       scoreText.innerText = score;
 
-      // efek goyang kecil
-      gameArea.style.transform = "translate(-5px, 5px)";
+      gameArea.style.transform = "translate(-6px, 6px) rotateX(5deg)";
       setTimeout(() => {
-        gameArea.style.transform = "translate(5px, -5px)";
-      }, 50);
+        gameArea.style.transform = "translate(6px, -6px) rotateX(-5deg)";
+      }, 60);
       setTimeout(() => {
-        gameArea.style.transform = "translate(0,0)";
-      }, 100);
+        gameArea.style.transform = "translate(0,0) rotateX(0deg)";
+      }, 120);
     }
 
-    /* ================= GYRO ================= */
+    /* ============ GYRO ============ */
 
     function enableGyro() {
       if (!window.DeviceOrientationEvent) return;
 
       if (typeof DeviceOrientationEvent.requestPermission === "function") {
         DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === "granted") {
+          .then(res => {
+            if (res === "granted") {
               window.addEventListener("deviceorientation", handleGyro);
-              gyroActive = true;
             }
           })
           .catch(console.error);
       } else {
         window.addEventListener("deviceorientation", handleGyro);
-        gyroActive = true;
       }
     }
 
     function handleGyro(event) {
       if (!gameActive) return;
 
-      let x = event.gamma;
-      let y = event.beta;
+      // kiri - kanan
+      let x = event.gamma || 0;
 
+      // atas - bawah
+      let y = event.beta || 0;
+
+      // batas
       x = Math.max(-10, Math.min(10, x));
-      y = Math.max(-10, Math.min(10, y));
+      y = Math.max(-15, Math.min(15, y));
 
-      gameArea.style.transform = `translate(${x}px, ${y}px)`;
+      gameArea.style.transform =
+        `translate(${x}px, ${y}px) rotateX(${y}deg)`;
     }
   </script>
 </body>
