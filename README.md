@@ -1,2 +1,2 @@
-# Forip
+# FUFUFArip
 Simple game library
