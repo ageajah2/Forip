@@ -135,5 +135,5 @@
   {  "title": "MBG Rush",  "slug": "mbgrush",  "thumb": "games/mbgrush/thumb.png",  "path": "games/mbgrush/index.html",
   "tags": [    "racing"  ],  "author": "Warga"},
   {  "title": "Tanam Sawit",  "slug": "nyawit",  "thumb": "games/nyawit/thumb.jpg",  "path": "games/nyawit/index.html",
-  "tags": [    "nature"  ],  "author": "Warga"}
+  "tags": [    "nature","politic"  ],  "author": "Warga"}
 ]
