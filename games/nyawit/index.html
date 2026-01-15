@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Game Menanam Sawit</title>
+  <title>Menanam Sawit</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -9,20 +9,26 @@
       background: #dfffd8;
     }
 
-    h1 {
-      color: green;
+    h1 { color: green; }
+
+    #gameWrapper {
+      width: 300px;
+      height: 300px;
+      margin: 20px auto;
+      position: relative;
     }
 
     #gameArea {
       width: 300px;
       height: 300px;
       background: #8b5a2b;
-      margin: 20px auto;
       position: relative;
       cursor: pointer;
       border: 4px solid #4CAF50;
       transition: transform 0.1s linear;
       transform-style: preserve-3d;
+      overflow: visible;
+      z-index: 1;
     }
 
     .palm {
@@ -30,6 +36,35 @@
       font-size: 32px;
       user-select: none;
       pointer-events: none;
+      z-index: 5;
+      transition: transform 0.6s ease-out, opacity 0.6s;
+      transform-origin: bottom center;
+    }
+
+    .truck {
+      position: absolute;
+      font-size: 40px;
+      top: 130px;
+      left: 360px;
+      transition: left 0.8s ease-in-out;
+      z-index: 6;
+    }
+
+    #superwok {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 180px;
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 20;
+    }
+
+    #superwok.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.4);
     }
 
     #info {
@@ -53,7 +88,10 @@
     Waktu: <span id="time">30</span> detik
   </div>
 
-  <div id="gameArea"></div>
+  <div id="gameWrapper">
+    <div id="gameArea"></div>
+    <img id="superwok" src="superwok.jpg" alt="SUPERWOK">
+  </div>
 
   <button onclick="startGame()">Mulai Game</button>
 
@@ -62,35 +100,38 @@
     let timeLeft = 30;
     let timer = null;
     let gameActive = false;
+    let penaltiStreak = 0;
 
     const palmSize = 32;
+    const palmOffsetY = 12;
 
     const gameArea = document.getElementById("gameArea");
     const scoreText = document.getElementById("score");
     const timeText = document.getElementById("time");
 
-    /* ============ GAME ============ */
+    /* ========= GAME ========= */
 
     function startGame() {
       clearInterval(timer);
-      score = 0;
-      timeLeft = 30;
-      gameActive = true;
+      gameActive = false;
 
-      scoreText.innerText = score;
-      timeText.innerText = timeLeft;
-      gameArea.innerHTML = "";
+      runTruckAnimation(() => {
+        score = 0;
+        timeLeft = 30;
+        penaltiStreak = 0;
+        gameActive = true;
 
-      enableGyro();
-
-      timer = setInterval(() => {
-        timeLeft--;
+        scoreText.innerText = score;
         timeText.innerText = timeLeft;
 
-        if (timeLeft <= 0) {
-          endGame();
-        }
-      }, 1000);
+        enableGyro();
+
+        timer = setInterval(() => {
+          timeLeft--;
+          timeText.innerText = timeLeft;
+          if (timeLeft <= 0) endGame();
+        }, 1000);
+      });
     }
 
     function endGame() {
@@ -101,26 +142,50 @@
       alert("🌴 Game Over!\nSkor kamu: " + score);
     }
 
-    /* ============ POHON ============ */
+    /* ========= TRUCK ========= */
 
-    function isOverlapping(x, y) {
+    function runTruckAnimation(callback) {
       const palms = document.querySelectorAll(".palm");
 
-      for (let palm of palms) {
-        const px = palm.offsetLeft;
-        const py = palm.offsetTop;
+      const truck = document.createElement("div");
+      truck.className = "truck";
+      truck.innerHTML = "🚛";
+      gameArea.appendChild(truck);
 
-        const distance = Math.hypot(px - x, py - y);
-        if (distance < palmSize) return true;
-      }
-      return false;
+      setTimeout(() => {
+        truck.style.left = "-80px";
+      }, 50);
+
+      // pohon terpental saat truk di tengah
+      setTimeout(() => {
+        palms.forEach(palm => {
+          const dx = Math.random() * -200 - 50;
+          const dy = Math.random() * -200 - 50;
+          palm.style.transform = `translate(${dx}px, ${dy}px) rotate(-720deg)`;
+          palm.style.opacity = "0";
+        });
+
+        if (navigator.vibrate) navigator.vibrate([200]);
+      }, 400);
+
+      setTimeout(() => {
+        gameArea.innerHTML = "";
+        callback();
+      }, 900);
     }
 
-    gameArea.addEventListener("click", function (event) {
+    /* ========= TANAM ========= */
+
+    function isOverlapping(x, y) {
+      return [...document.querySelectorAll(".palm")]
+        .some(p => Math.hypot(p.offsetLeft - x, p.offsetTop - y) < palmSize);
+    }
+
+    gameArea.addEventListener("click", e => {
       if (!gameActive) return;
 
-      const x = event.offsetX - palmSize / 2;
-      const y = event.offsetY - palmSize / 2;
+      const x = e.offsetX - palmSize / 2;
+      const y = e.offsetY - palmSize / 2 - palmOffsetY;
 
       if (isOverlapping(x, y)) {
         penalti();
@@ -137,28 +202,35 @@
 
       score++;
       scoreText.innerText = score;
+      penaltiStreak = 0;
     });
 
-    /* ============ PENALTI ============ */
+    /* ========= PENALTI ========= */
 
     function penalti() {
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
+      penaltiStreak++;
+
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+      gameArea.style.transform = "translate(-6px,6px) rotateX(5deg)";
+      setTimeout(() => gameArea.style.transform = "translate(0,0)", 120);
+
+      if (penaltiStreak >= 3) {
+        showSuperwok();
+        penaltiStreak = 0;
       }
-
-      score = Math.max(0, score - 0);
-      scoreText.innerText = score;
-
-      gameArea.style.transform = "translate(-6px, 6px) rotateX(5deg)";
-      setTimeout(() => {
-        gameArea.style.transform = "translate(6px, -6px) rotateX(-5deg)";
-      }, 60);
-      setTimeout(() => {
-        gameArea.style.transform = "translate(0,0) rotateX(0deg)";
-      }, 120);
     }
 
-    /* ============ GYRO ============ */
+    function showSuperwok() {
+      const img = document.getElementById("superwok");
+      img.classList.add("show");
+
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+
+      setTimeout(() => img.classList.remove("show"), 1200);
+    }
+
+    /* ========= GYRO ========= */
 
     function enableGyro() {
       if (!window.DeviceOrientationEvent) return;
@@ -169,25 +241,17 @@
             if (res === "granted") {
               window.addEventListener("deviceorientation", handleGyro);
             }
-          })
-          .catch(console.error);
+          });
       } else {
         window.addEventListener("deviceorientation", handleGyro);
       }
     }
 
-    function handleGyro(event) {
+    function handleGyro(e) {
       if (!gameActive) return;
 
-      // kiri - kanan
-      let x = event.gamma || 0;
-
-      // atas - bawah
-      let y = event.beta || 0;
-
-      // batas
-      x = Math.max(-10, Math.min(10, x));
-      y = Math.max(-15, Math.min(15, y));
+      const x = Math.max(-10, Math.min(10, e.gamma || 0));
+      const y = Math.max(-15, Math.min(15, e.beta || 0));
 
       gameArea.style.transform =
         `translate(${x}px, ${y}px) rotateX(${y}deg)`;
