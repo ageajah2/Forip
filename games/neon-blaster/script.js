@@ -12,6 +12,8 @@ let timeLeft = 60;
 let hp = 100;
 let gameRunning = true;
 let frames = 0;
+let isHardMode = false;
+const hardModeBtn = document.getElementById('hard-mode-btn');
 
 // Inputs
 const keys = { w: false, a: false, s: false, d: false };
@@ -55,6 +57,9 @@ function resetGame() {
     timeLeft = 60;
     hp = 100;
 
+    gameOverScreen.querySelector('h2').innerText = "MISSION ENDED";
+    gameOverScreen.querySelector('h2').style.color = "#ff0055";
+
     player.x = 100;
     player.y = 100;
     player.dx = 0;
@@ -77,19 +82,48 @@ function updateHud() {
     healthEl.style.color = hp > 30 ? '#00ff66' : '#ff0055';
 }
 
-function spawnEnemy() {
+function spawnEnemy(isBoss = false) {
     // Simple enemy spawning
     let x = Math.random() > 0.5 ? 0 : canvas.width;
     let y = Math.random() * (canvas.height - 100);
-    enemies.push({
-        x: x,
-        y: y,
-        w: 25,
-        h: 25,
-        dx: (Math.random() * 2 + 1) * (x === 0 ? 1 : -1),
-        dy: 0,
-        type: 'flyer',
-        hp: 1
+
+    if (isBoss) {
+        const bossHp = isHardMode ? 40 : 20;
+        enemies.push({
+            x: x,
+            y: y,
+            w: 60,
+            h: 60,
+            dx: (Math.random() * 1 + 0.5) * (x === 0 ? 1 : -1),
+            dy: 0,
+            type: 'boss',
+            hp: bossHp,
+            maxHp: bossHp
+        });
+    } else {
+        const flyerHp = isHardMode ? 2 : 1;
+        enemies.push({
+            x: x,
+            y: y,
+            w: 25,
+            h: 25,
+            dx: (Math.random() * 2 + 1) * (x === 0 ? 1 : -1),
+            dy: 0,
+            type: 'flyer',
+            hp: flyerHp,
+            maxHp: flyerHp
+        });
+    }
+}
+
+// Hard Mode Toggle
+if (hardModeBtn) {
+    hardModeBtn.addEventListener('click', () => {
+        isHardMode = !isHardMode;
+        hardModeBtn.classList.toggle('active', isHardMode);
+        hardModeBtn.innerText = isHardMode ? 'HARD: ON' : 'HARD: OFF';
+        // Reset game to apply changes or just keep playing
+        resetGame();
     });
 }
 
@@ -105,6 +139,22 @@ function createParticles(x, y, color, amount) {
             life: 30
         });
     }
+}
+
+function getNearestEnemy() {
+    if (enemies.length === 0) return null;
+    let nearest = null;
+    let minDist = Infinity;
+    enemies.forEach(e => {
+        const dx = e.x + e.w / 2 - (player.x + player.w / 2);
+        const dy = e.y + e.h / 2 - (player.y + player.h / 2);
+        const dist = dx * dx + dy * dy;
+        if (dist < minDist) {
+            minDist = dist;
+            nearest = e;
+        }
+    });
+    return nearest;
 }
 
 // Controls
@@ -203,7 +253,11 @@ function shoot() {
     let targetX = mouse.x;
     let targetY = mouse.y;
 
-    if (mouse.x === 0 && mouse.y === 0) {
+    const nearestEnemy = getNearestEnemy();
+    if (nearestEnemy) {
+        targetX = nearestEnemy.x + nearestEnemy.w / 2;
+        targetY = nearestEnemy.y + nearestEnemy.h / 2;
+    } else if (mouse.x === 0 && mouse.y === 0) {
         targetX = player.x + (player.facingLeft ? -100 : 200);
         targetY = player.y + player.h / 2;
     }
@@ -239,7 +293,13 @@ function update() {
 
     // Spawning
     frames++;
-    if (frames % 60 === 0) spawnEnemy();
+    if (frames % 60 === 0) {
+        if (frames % 600 === 0) {
+            spawnEnemy(true); // Spawn Boss every 10 seconds
+        } else {
+            spawnEnemy(); // Regular enemy every second
+        }
+    }
 
     // Player Physics
     if (keys.a) { player.dx = -PLAYER_SPEED; player.facingLeft = true; }
@@ -312,10 +372,17 @@ function update() {
         bullets.forEach((b, bi) => {
             if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
                 // Hit
-                score += 10;
-                createParticles(e.x + e.w / 2, e.y + e.h / 2, '#ffe600', 15);
-                enemies.splice(i, 1);
+                e.hp--;
+                createParticles(b.x, b.y, e.type === 'boss' ? '#ff00ff' : '#ffe600', 5);
                 bullets.splice(bi, 1);
+
+                if (e.hp <= 0) {
+                    let points = e.type === 'boss' ? 100 : 10;
+                    if (isHardMode) points *= 2;
+                    score += points;
+                    createParticles(e.x + e.w / 2, e.y + e.h / 2, e.type === 'boss' ? '#ff00ff' : '#ffe600', 15);
+                    enemies.splice(i, 1);
+                }
             }
         });
     });
@@ -361,7 +428,12 @@ function draw() {
     // Rotating Gun
     let targetX = mouse.x;
     let targetY = mouse.y;
-    if (mouse.x === 0 && mouse.y === 0) {
+
+    const nearestEnemy = getNearestEnemy();
+    if (nearestEnemy) {
+        targetX = nearestEnemy.x + nearestEnemy.w / 2;
+        targetY = nearestEnemy.y + nearestEnemy.h / 2;
+    } else if (mouse.x === 0 && mouse.y === 0) {
         targetX = player.x + (player.facingLeft ? -100 : 100);
         targetY = player.y + player.h / 2;
     }
@@ -379,13 +451,40 @@ function draw() {
 
     // Enemies
     enemies.forEach(e => {
-        ctx.fillStyle = "#ff0055";
-        ctx.beginPath();
-        ctx.moveTo(e.x + e.w / 2, e.y);
-        ctx.lineTo(e.x + e.w, e.y + e.h / 2);
-        ctx.lineTo(e.x + e.w / 2, e.y + e.h);
-        ctx.lineTo(e.x, e.y + e.h / 2);
-        ctx.fill();
+        if (e.type === 'boss') {
+            // Draw Boss (Giant Hexagon)
+            ctx.fillStyle = "#ff00ff";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ff00ff";
+            ctx.fillRect(e.x, e.y, e.w, e.h);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(e.x, e.y, e.w, e.h);
+
+            // Boss HP Bar
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(e.x, e.y - 15, e.w, 8);
+            ctx.fillStyle = isHardMode ? "#ff0000" : "#ff00ff";
+            ctx.fillRect(e.x, e.y - 15, (e.hp / e.maxHp) * e.w, 8);
+
+            ctx.shadowBlur = 0;
+        } else {
+            // Regular Enemy HP Bar (if hard mode)
+            if (isHardMode) {
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(e.x, e.y - 8, e.w, 4);
+                ctx.fillStyle = "#ff0055";
+                ctx.fillRect(e.x, e.y - 8, (e.hp / e.maxHp) * e.w, 4);
+            }
+
+            ctx.fillStyle = "#ff0055";
+            ctx.beginPath();
+            ctx.moveTo(e.x + e.w / 2, e.y);
+            ctx.lineTo(e.x + e.w, e.y + e.h / 2);
+            ctx.lineTo(e.x + e.w / 2, e.y + e.h);
+            ctx.lineTo(e.x, e.y + e.h / 2);
+            ctx.fill();
+        }
     });
 
     // Bullets
@@ -422,17 +521,24 @@ function draw() {
 
 function gameOver() {
     gameRunning = false;
+
+    if (hp >= 100 && timeLeft <= 0) {
+        gameOverScreen.querySelector('h2').innerText = "PERFECT!";
+        gameOverScreen.querySelector('h2').style.color = "#00ff66";
+        score *= 2;
+    }
+
     finalScoreEl.innerText = `Final Score: ${score}`;
     gameOverScreen.classList.remove('hidden');
 }
 
-function loop() {
+// Game loop running at fixed 60 FPS
+setInterval(() => {
     update();
     draw();
-    requestAnimationFrame(loop);
-}
+}, 1000 / 60);
 
 restartBtn.addEventListener('click', resetGame);
 
 // Start
-loop();
+resetGame();
