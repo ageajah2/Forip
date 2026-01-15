@@ -126,14 +126,18 @@
     const resetBtn = document.getElementById("resetBtn");
     const clickSound = document.getElementById("clickSound");
 
-    let score = 0;
+    let score = Number(localStorage.getItem("score")) || 0;
+	counterEl.textContent = score;
+
     const closedImg = "balul.jpg";
     const openImg = "balul2.jpg";
 
-    function updateScore() {
-      score++;
-      counterEl.textContent = score;
-    }
+	   function updateScore() {
+	  score++;
+	  counterEl.textContent = score;
+	  localStorage.setItem("score", score);
+	}
+
 
     function openMouth() {
       popcatImg.src = openImg;
@@ -174,11 +178,13 @@
     popcatWrapper.addEventListener("contextmenu", (e) => e.preventDefault());
 
     // Tombol reset
-    resetBtn.addEventListener("click", () => {
-      score = 0;
-      counterEl.textContent = score;
-      closeMouth();
-    });
+		resetBtn.addEventListener("click", () => {
+	  score = 0;
+	  counterEl.textContent = score;
+	  localStorage.setItem("score", score);
+	  closeMouth();
+	});
+
   </script>
 </body>
 </html>
