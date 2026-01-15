@@ -39,7 +39,9 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-let score = 0;
+let score = Number(localStorage.getItem('score')) || 0;
+scoreEl.textContent = score;
+
 let gravity = 0.15;
 let shake = 0;
 
@@ -62,6 +64,7 @@ function slap(x, y) {
     head.vx += dx * 0.05 + (Math.random()-0.5)*10;
     head.vy += dy * 0.05 - 10;
     score++;
+localStorage.setItem('score', score);
     head.face = moods[Math.floor(Math.random()*moods.length)];
     shake = 10;
     scoreEl.textContent = score;
