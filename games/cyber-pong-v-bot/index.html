@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Pong</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="game-container">
+        <h1>CYBER PONG [vs BOT]</h1>
+        <div class="score-board">
+            <div id="player-score">0</div>
+            <div id="computer-score">0</div>
+        </div>
+        <div class="difficulty-controls">
+            <button class="diff-btn active" data-level="0.05">Easy</button>
+            <button class="diff-btn" data-level="0.1">Medium</button>
+            <button class="diff-btn" data-level="0.2">Hard</button>
+        </div>
+        <canvas id="pongCanvas" width="800" height="500"></canvas>
+        <p>Player (Left): Mouse | Opponent: Super AI Bot</p>
+        <div class="main-buttons">
+            <button id="restartBtn">Restart Game</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
