@@ -173,11 +173,24 @@ function gameLoop() {
     render();
 }
 
-// Mouse movement
-canvas.addEventListener("mousemove", (evt) => {
+// Controls (Mouse & Touch)
+function handleMove(evt) {
     let rect = canvas.getBoundingClientRect();
-    user.y = evt.clientY - rect.top - user.height / 2;
-});
+    let clientY;
+
+    if (evt.type === 'mousemove') {
+        clientY = evt.clientY;
+    } else if (evt.type === 'touchmove') {
+        clientY = evt.touches[0].clientY;
+        evt.preventDefault(); // Prevent scrolling while playing
+    }
+
+    user.y = clientY - rect.top - user.height / 2;
+}
+
+canvas.addEventListener("mousemove", handleMove);
+canvas.addEventListener("touchmove", handleMove, { passive: false });
+canvas.addEventListener("touchstart", handleMove, { passive: false });
 
 
 // Start
