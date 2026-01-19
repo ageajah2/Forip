@@ -60,7 +60,7 @@
       border-radius: 20px;
       overflow: hidden;
       transform-origin: center;
-      transition: transform 0.05s ease-out;
+      transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .popcat-img {
@@ -149,6 +149,7 @@
       e.preventDefault();
       updateScore();
       openMouth();
+      popcatWrapper.style.transform = "scale(1.1)";
 
       // 🔊 Mainkan suara
       clickSound.currentTime = 0;
